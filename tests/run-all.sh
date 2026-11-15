@@ -21,4 +21,6 @@ echo "order: $(node order.js ${PADEL_HTML:-../dist/padel-turnier.html} 800 2>&1 
 echo "new1: $(node new1.js 2>&1 | grep -E '^(A/B|C:|D:)' | tr '\n' ' ')"
 echo "engine-diff: $(node engine-diff.js 600 2>&1 | tail -1)"
 for t in v36 zeit courtnames sec bk rules helperui; do echo "$t: $(node $t.js 2>&1 | grep -E 'FEHLER|ALLES OK|JS-Fehler' | tr '\n' ' ' | cut -c1-200)"; done
+SRV=$(cd .. && node tools/build-server.js --check 2>&1 | tail -1; node tests/server/functional.test.mjs 2>&1 | tail -1; node tests/server/sim.test.mjs 80 2>&1 | tail -1 | cut -c1-260; node tests/server/fuzz.test.mjs 40 2>&1 | tail -1 | cut -c1-200)
+echo "server: $SRV"
 echo "ENDE2"

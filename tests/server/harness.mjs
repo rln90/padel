@@ -15,7 +15,7 @@ export function makeEnv(opts={}){
           const req=url instanceof Request?url:new Request(url,init);
           if(!stores.has(name))stores.set(name,new Map());
           const st=stores.get(name);
-          if(opts.evict&&inst.has(name)&&Math.random()<opts.evict){inst.delete(name);env.stats.evictions++}
+          if(opts.evict&&inst.has(name)&&(opts.evictRng||Math.random)()<opts.evict){inst.delete(name);env.stats.evictions++}
           let o=inst.get(name);
           if(!o){
             const state={storage:{
