@@ -1,0 +1,25 @@
+/* Online-Oberfläche */
+#onl,#onl2{display:flex;flex-direction:column;gap:20px}
+#onl2:empty,#onl:empty{display:none}
+.onlmsg{padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--tint);font-size:14px;position:sticky;top:8px;z-index:5}
+.onlmsg.err{border-color:var(--alert);color:var(--alert);background:var(--surface)}
+.linkrow{display:flex;gap:8px;align-items:stretch}
+.linkrow input{flex:1 1 auto;font-size:14px}
+.linkrow button{flex:0 0 auto}
+.plist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.plist li{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px 12px;padding:8px 0;border-top:1px solid var(--line)}
+.plist li:first-child{border-top:0}
+.pn{overflow-wrap:anywhere}
+.pctl{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pctl input{width:150px}
+.pctl button{min-height:36px;padding:0 12px;font-size:14px}
+.panel>details>summary,details.panel>summary{font-weight:600}
+details.panel{gap:12px}
+.mygame .mw+.mw{margin-top:14px}
+.panel .mw .actions{padding-top:6px}
+.panel .mw .actions button{min-height:40px}
+.reqs{display:flex;flex-direction:column;gap:6px}
+.adm select{width:auto;min-width:160px}
+body.onl-me .mine>label,body.onl-me .mine>select{display:none}
+.panel summary{padding:6px 0}
+@media (max-width:480px){.pctl input{width:100%}.pctl{width:100%}}

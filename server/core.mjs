@@ -54,7 +54,7 @@ export function cleanCfg(input,base,E){
   if(c.ov!=='yes')c.lead=0;
   return c;
 }
-const DEFAULT_CFG={R:5,courts:2,dur:20,brk:5,lim:true,draw:true,ov:'wait',lead:0,wu:0,t0:null,cn:[],auto:'confirmed',grace:120};
+const DEFAULT_CFG={R:5,courts:2,dur:20,brk:5,lim:true,draw:true,ov:'wait',lead:0,wu:0,t0:null,cn:[],auto:'reported',grace:120};
 
 export const ROUTE_KEYS=()=>Object.keys(ROUTES);
 
@@ -180,7 +180,7 @@ export class Tournament{
     const v={ver:m.ver,now:this.now(),code:m.code,status:m.status,cfg:m.cfg,
       players:m.players.map((p,i)=>({id:p.id,name:p.name,taken:!!p.hash,released:!!p.released,out:S?E.isOut(i):false})),
       S:S||null,res,over:S?E.isOver():false,role:who.role};
-    if(who.role==='player'){const i=this.idxOf(who.pid);v.me={pid:who.pid,idx:i,name:m.players[i].name}}
+    if(who.role==='player'){const i=this.idxOf(who.pid);v.me={pid:who.pid,idx:i,name:m.players[i].name};v.dropReq=m.reqs.some(r=>r.pid===who.pid)}
     if(who.badToken)v.badToken=true;
     if(adm){v.reqs=m.reqs.slice();v.log=m.log.slice(-60);v.attention=Object.keys(m.res).filter(k=>m.res[k].st==='disputed'||(m.res[k].n||0)>=3).map(Number)}
     return v;

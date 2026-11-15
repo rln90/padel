@@ -65,7 +65,7 @@ const NAMES=['Anna','Ben','Cem','Dora','Emil','Fay','Gero','Hanna'];
 }
 // ---- Rechte-Matrix im laufenden Turnier
 {
-  const {c,code,adm}=await mk({R:4,courts:2,ov:'yes'});
+  const {c,code,adm}=await mk({R:4,courts:2,ov:'yes',auto:'confirmed'});
   const t=await fill(c,code,NAMES.slice(0,6));
   ok((await c('POST',T(code)+'/admin/start',{token:t.Anna})).status===403,'Spieler kann nicht starten');
   ok((await c('POST',T(code)+'/admin/start',{})).status===403,'anonym kann nicht starten');
@@ -150,7 +150,7 @@ const NAMES=['Anna','Ben','Cem','Dora','Emil','Fay','Gero','Hanna'];
 }
 // ---- Frist im Modus „bestätigt“
 {
-  const {env,c,code,adm}=await mk({R:4,courts:1,ov:'yes',grace:60});
+  const {env,c,code,adm}=await mk({R:4,courts:1,ov:'yes',grace:60,auto:'confirmed'});
   const t=await fill(c,code,NAMES.slice(0,4));await c('POST',T(code)+'/admin/start',{token:adm});
   const get=async()=>(await c('GET',T(code)+'/state',{token:adm})).json;
   let st=await get();const g=st.S.games[0],A=t[NAMES[g.a]],B=t[NAMES[g.b]];
