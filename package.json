@@ -1,0 +1,13 @@
+{
+  "name": "padel-turnier",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Padel-Turnier (Einzel, Schweizer System) mit Live-Ansicht",
+  "scripts": {
+    "build": "node tools/build.js",
+    "test": "bash tests/run-all.sh"
+  },
+  "devDependencies": {
+    "jsdom": "^24.0.0"
+  }
+}

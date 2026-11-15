@@ -1,0 +1,1333 @@
+<title>Padel-Turnier</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:wght@500;600&display=swap">
+<style>
+/* Layout: eine schmale Spalte. Die aktuelle Runde ist die einzige angehobene Fläche,
+   Tabelle und Verlauf liegen direkt auf der Seite. Lime gibt es nur für den Sieger. */
+:root{
+  --paper:#f2f5f7;
+  --surface:#ffffff;
+  --ink:#12202c;
+  --muted:#566779;
+  --line:#d9e0e7;
+  --edge:#7f8fa0;
+  --court:#1d4f7c;
+  --on-court:#ffffff;
+  --ball:#d6e63b;
+  --on-ball:#2b3300;
+  --alert:#a8261c;
+  --on-alert:#ffffff;
+  --tint:#e8eff6;
+  --rc0:#1f6fb5;--rc1:#e08a00;--rc2:#2e9d62;--rc3:#8e4fb0;--rc4:#cf4137;--rc5:#12a0b0;
+  --display:"Newsreader",Georgia,"Times New Roman",serif;
+  --text:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#0e1720;--surface:#15212d;--ink:#e8eef3;--muted:#9aa9ba;--line:#263648;--edge:#5b7390;
+  --court:#86b6e6;--on-court:#08131f;--alert:#ff9a90;--on-alert:#2a0b08;--tint:#1a2a3b;--rc0:#6aa9f0;--rc1:#f0a63a;--rc2:#5fcf8f;--rc3:#c39be0;--rc4:#f27c72;--rc5:#4fd0dc;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0e1720;--surface:#15212d;--ink:#e8eef3;--muted:#9aa9ba;--line:#263648;--edge:#5b7390;
+  --court:#86b6e6;--on-court:#08131f;--alert:#ff9a90;--on-alert:#2a0b08;--tint:#1a2a3b;--rc0:#6aa9f0;--rc1:#f0a63a;--rc2:#5fcf8f;--rc3:#c39be0;--rc4:#f27c72;--rc5:#4fd0dc;color-scheme:dark}
+
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--paper);color:var(--ink);font:16px/1.5 var(--text);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+main{max-width:720px;margin:0 auto;padding-block:24px 40px;display:flex;flex-direction:column;gap:28px}
+#app{display:flex;flex-direction:column;gap:28px}
+:focus-visible{outline:2px solid var(--court);outline-offset:2px}
+
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+h1{font:600 30px/1.1 var(--display);letter-spacing:-.01em;margin:0}
+.tagline{margin:6px 0 0;color:var(--muted);font-size:15px}
+h2{font:600 22px/1.2 var(--display);margin:0;text-wrap:balance}
+h3{font:600 16px/1.3 var(--text);margin:0}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:16px}
+.section{display:flex;flex-direction:column;gap:12px}
+.head{display:flex;justify-content:space-between;align-items:baseline;gap:4px 12px;flex-wrap:wrap}
+.meta{color:var(--muted);font-size:14px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+label{font-size:14px;font-weight:500}
+select,textarea,input{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--edge);border-radius:8px;padding:10px 12px;min-height:44px;width:100%;min-width:0}
+textarea{resize:vertical;min-height:88px}
+details.names>summary{cursor:pointer;font-weight:500;padding:6px 0}
+.nfg h3{margin:12px 0 6px;font-size:14px;font-weight:600}
+.nfl{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+#nf .hint{margin-top:10px}
+.hint{margin:0;font-size:14px;color:var(--muted)}
+.hint.err{color:var(--alert)}
+.sum{margin:0;font-weight:500}
+#sum{display:flex;flex-direction:column;gap:4px}
+
+button{font:600 15px/1 var(--text);min-height:44px;padding:0 18px;border-radius:8px;border:1px solid var(--court);background:var(--court);color:var(--on-court);cursor:pointer}
+button:hover:not(:disabled){filter:brightness(1.12)}
+button.quiet{background:transparent;color:var(--ink);border-color:var(--edge)}
+button.quiet:hover:not(:disabled){border-color:var(--ink);filter:none}
+button.danger{background:var(--alert);border-color:var(--alert);color:var(--on-alert)}
+button:disabled{opacity:.4;cursor:not-allowed}
+.actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px}
+.status{color:var(--muted);font-size:14px}
+.cpbox{width:100%;min-height:150px;margin-top:10px;font:14px/1.4 ui-monospace,monospace;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}
+.sure{flex-basis:100%;margin-top:6px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:14px}
+.sure .st{font-weight:600;margin-bottom:4px}
+.sure .sr{display:flex;flex-wrap:wrap;gap:2px 10px;padding:3px 0}
+.sure .sl{color:var(--muted)}
+.sure .sn{color:var(--muted);font-size:13px;margin-top:4px}
+
+.cur{display:flex;flex-direction:column;gap:12px}
+.extra{display:flex;flex-direction:column;gap:6px;padding-top:8px}
+.matches{display:flex;flex-direction:column}
+.m{display:grid;grid-template-columns:minmax(0,1fr) 56px 10px 56px minmax(0,1fr);gap:8px;align-items:center;padding-block:10px;border-top:1px solid var(--line)}
+.matches>.m:first-child{border-top:0}
+.m .a{text-align:right}
+.m .a,.m .b{overflow-wrap:anywhere}
+.m input{text-align:center;padding:8px 2px;font-variant-numeric:tabular-nums;-moz-appearance:textfield;appearance:textfield}
+input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.m .sep{text-align:center;color:var(--muted)}
+.win{color:var(--court);font-weight:600}
+.note{margin:0;color:var(--muted);font-size:15px}
+
+.wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:15px;font-variant-numeric:tabular-nums}
+th,td{padding:9px 8px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+th{font-size:13px;font-weight:500;color:var(--muted);border-bottom-color:var(--edge)}
+th.nm,td.nm{text-align:left;width:100%}
+table.cmpt{width:100%}
+.cmpt th.l,.cmpt td.l{text-align:left}
+.cmpt th{white-space:normal;vertical-align:bottom;line-height:1.2}
+.cmpt td{padding-left:4px;padding-right:4px}
+.cmpt td.l{width:20%}
+th.cm,td.cm{color:var(--court);font-weight:600}
+tr.cmp1 td{border-bottom:0;padding-bottom:2px}
+tr.cmp2 td{text-align:left;white-space:normal;font-size:13px;color:var(--muted);padding-top:0;font-weight:400}
+tr.sel.cmp2 td{color:var(--court)}
+td.rk{color:var(--muted)}
+td.pt{font-weight:600}
+tr.lead td{font-weight:600}
+tr.lead td.rk{color:var(--court)}
+tbody tr:last-child td{border-bottom:0}
+.warm{align-self:center;text-align:center;font-size:13px;color:var(--muted);padding:6px 0;border:1px dashed var(--line);border-radius:8px}
+.sub{display:block;font-size:12px;color:var(--muted)}
+.tctl{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin:4px 0 12px}.tctl label{display:flex;gap:6px;align-items:center;font-size:14px}.tctl input,.tctl select{width:auto;min-width:0;font-size:16px}.tctl .dl{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.legend{margin:0;font-size:13px;color:var(--muted)}
+.cmp{border-top:1px solid var(--line);padding-top:12px}
+.cmp #ptab{display:flex;flex-direction:column;gap:8px;padding-top:10px}
+tr.sel td{font-weight:600;color:var(--court)}
+select:disabled{opacity:.55;cursor:not-allowed}
+td.bk{text-align:left;white-space:normal}
+.bkt{margin-top:8px}
+.plan{display:grid;grid-template-columns:40px repeat(var(--cols),minmax(84px,1fr));gap:6px;min-width:calc(40px + var(--cols)*90px)}
+.tm{position:sticky;left:0;z-index:1;background:var(--paper);align-self:center;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+.ph{text-align:center;font-size:13px;color:var(--muted);padding-bottom:2px}
+.rh{grid-column:1/-1;display:flex;justify-content:flex-start;align-items:baseline;gap:12px;margin-top:8px;padding-top:10px;border-top:1px solid var(--line);font-weight:600}
+.rcb{border-left:4px solid var(--rc);padding-left:10px}
+.rh.first{margin-top:0;padding-top:0;border-top:0}
+.rh span{font-weight:400;font-size:13px;color:var(--muted)}
+.cell{min-width:0;min-height:58px;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:6px;border:1px solid var(--edge);border-radius:8px;background:var(--surface);font-size:13px}
+.cell.ghost{border-style:dashed;border-color:var(--line);background:transparent;color:var(--muted);align-items:center;text-align:center;font-size:13px}
+.cell.ghost .tag{color:var(--muted)}
+.cell.cur{background:var(--tint);border-color:var(--court)}
+.cell.fixd{border-style:dashed;border-color:var(--line)}
+.cell.fixd .pl b{display:none}
+.cell .tag{font-size:11px;line-height:1.25;color:var(--muted)}
+.cell .tag span{display:block}
+.cell .pl{display:flex;justify-content:space-between;gap:6px}
+.cell .pl span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cell .pl b{font-weight:500;font-variant-numeric:tabular-nums}
+.cell .pl.w{color:var(--court);font-weight:600}
+.cell .pl.w b{font-weight:600}
+
+#livebar:not(:empty){margin:0 0 12px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;font-size:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+#livebar span{flex:1 1 220px}
+.gone{font-size:12px;color:var(--muted,#6b7280);font-weight:400;margin-left:6px}
+.champ{background:var(--ball);color:var(--on-ball);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:2px}
+#champ:empty{display:none}
+.champ .k{font-size:14px;font-weight:500}
+.champ strong{font:600 32px/1.1 var(--display)}
+.champ span{font-size:15px}
+
+.hist details{border-top:1px solid var(--line);padding-block:12px}
+.hist details:first-child{border-top:0;padding-top:0}
+summary{cursor:pointer;font-weight:500;padding:9px 0}
+.rows{display:flex;flex-direction:column;gap:8px;padding-top:10px}
+.r{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:12px;font-size:15px}
+.r .a{text-align:right}
+.r .sc{font-variant-numeric:tabular-nums;color:var(--muted)}
+
+.rc0{--rc:var(--rc0)}.rc1{--rc:var(--rc1)}.rc2{--rc:var(--rc2)}.rc3{--rc:var(--rc3)}.rc4{--rc:var(--rc4)}.rc5{--rc:var(--rc5)}
+.mw{border-left:4px solid var(--rc,var(--line));padding-left:10px}
+.cell{border-left:4px solid var(--rc,var(--edge))}
+.cell.cur{border-left-color:var(--rc,var(--court))}
+.cell.ghost{border-left-color:var(--rc,var(--line))}
+.mw .tag{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+.mw+.mw{margin-top:14px}
+.hist .mw+.mw{margin-top:8px}
+.hist .mw .tag{margin-bottom:2px}
+.hist .mw{padding-block:1px}
+.wait{margin:14px 0 0;font-size:14px;color:var(--muted)}
+.rules{border-top:1px solid var(--line);padding-top:14px}
+.rules ul{margin:10px 0 0;padding-left:20px;color:var(--muted);font-size:14px}
+.rules li+li{margin-top:6px}
+
+@media (max-width:480px){
+  h1{font-size:26px}
+  .panel{padding:16px}
+  table{font-size:14px}
+  th,td{padding:9px 6px}
+}
+@media (max-width:340px){.cmpt td,.cmpt th{font-size:12.5px;padding-left:2px;padding-right:2px}}
+@media (max-width:380px){
+  table{font-size:13.5px}
+  th,td{padding:9px 4px}
+  .panel{padding:14px}
+}
+</style>
+
+<main>
+  <header class="top">
+    <div><h1>Padel-Turnier</h1><p class="tagline" id="tl">Einzel im Schweizer System</p></div>
+    <div id="topbtns"></div>
+  </header>
+  <div id="livebar"></div>
+  <div id="app"></div>
+</main>
+
+<script>
+document.documentElement.lang="de";
+const $=s=>document.querySelector(s),KEY="padel-turnier-v2";
+const MINN=4,MAXN=24,MINR=3,MAXR=20;
+let S=null,resetArmed=false,undoArmed=false;const justDone=new Set();
+try{const j=localStorage.getItem(KEY);if(j)S=JSON.parse(j)}catch(e){}
+/* Plausibilitätsprüfung eines Spielstands: Unsinnige Werte (z. B. Spielerzahl 1e9) würden die Seite einfrieren */
+function okState(S){
+  if(!S||typeof S!=="object")return false;
+  if(!((S.ov?Array.isArray(S.games)&&Array.isArray(S.rk):Array.isArray(S.rounds)&&S.rounds.length)&&Array.isArray(S.names)&&S.n&&S.R))return false;
+  const I=(v,a,b)=>Number.isInteger(v)&&v>=a&&v<=b;
+  return !!(I(S.n,MINN,MAXN)&&I(S.R,1,MAXR*2)&&S.names.length<=100&&(S.courts==null||I(S.courts,1,MAXN))&&(S.cn==null||(Array.isArray(S.cn)&&S.cn.length<=MAXN&&S.cn.every(x=>typeof x==="string"&&x.length<=24)))&&(S.lead==null||I(S.lead,0,2))&&(S.wu==null||I(S.wu,0,120))&&(S.t0==null||I(S.t0,0,1439))&&(S.dl==null||(typeof S.dl==="object"&&Object.keys(S.dl).length<=500&&Object.entries(S.dl).every(([k,v])=>I(+k,0,2000)&&I(v,-240,240))))&&(S.out==null||(Array.isArray(S.out)&&S.out.length<S.n&&S.out.every(x=>I(x,0,S.n-1))))&&(!S.ov||(S.games.length<=1000&&S.rk.length<=MAXN&&S.games.every(m=>m&&I(m.a,0,S.n-1)&&I(m.b,0,S.n-1))))&&(S.ov||S.rounds.length<=MAXR*2));
+}
+if(!okState(S))S=null;
+let VIEW=false;
+let liveDoc=null,liveCan=false,liveRemote=null,liveTimer=null,liveMsg="";
+const save=()=>{if(VIEW)return;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}pushLive()};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const letters=i=>String.fromCharCode(65+i%26)+(i>=26?Math.floor(i/26):"");
+const key=(a,b)=>a<b?a+"-"+b:b+"-"+a;
+const isOut=i=>!!(S&&S.out&&S.out.includes(i));
+const done=m=>Number.isInteger(m.sa)&&Number.isInteger(m.sb)&&m.sa>=0&&m.sb>=0&&(S.draw||m.sa!==m.sb);
+const eq=(x,y)=>x.p===y.p&&(x.gf-x.ga)===(y.gf-y.ga)&&x.w===y.w&&x.gf===y.gf;
+const cmp0=(x,y)=>y.p-x.p||(y.gf-y.ga)-(x.gf-x.ga)||y.w-x.w||y.gf-x.gf;
+const cmp=(x,y)=>cmp0(x,y)||x.i-y.i;
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const sgn=d=>d>0?"+"+d:d<0?"−"+(-d):"0";
+const validR=(n,R)=>{R=Math.min(MAXR,Math.max(MINR,Math.round(R)||MINR));if(n%2&&R%2)R++;return R};
+const roundOpts=n=>{const a=[];for(let r=MINR;r<=MAXR;r++)if(!(n%2&&r%2))a.push(r);return a};
+const totalGames=(n,R)=>n%2?(n-1)/2*R+R/2:n/2*R;
+const DURS=[10,15,20,25,30,40,45,60,75,90],BRKS=[...Array(6).keys(),10,15,20];
+/* Uhrzeit: Startzeit (Beginn der Platzbuchung), Aufwärmen davor, Verzögerungen ab einer Spielplanzeile */
+const hhmm=t=>{t=((Math.round(t)%1440)+1440)%1440;return String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0")};
+const tparse=v=>{const m=/^(\d{1,2}):(\d{2})$/.exec(v||"");return m&&+m[1]<24&&+m[2]<60?+m[1]*60+ +m[2]:null};
+const wu=()=>S?(S.wu||0):(+((document.getElementById("wu")||{}).value)||0);
+const T0=()=>S?(S.t0==null?null:S.t0):tparse((document.getElementById("t0")||{}).value);
+const dly=r=>{let t=0;const d=(S&&S.dl)||{};for(const k in d)if(+k<=r)t+=d[k];return t};
+const rowMin=(r,step)=>wu()+r*step+dly(r);
+const tt=(r,step)=>{const b=T0();return b==null?clk(rowMin(r,step)):hhmm(b+rowMin(r,step))};
+let PCUR=0;
+const fmt=t=>{const h=Math.floor(t/60),m=t%60;return h?h+" h"+(m?" "+m+" min":""):m+" min"};
+/* Zeitblöcke: alle Spiele eines Blocks laufen gleichzeitig. Das Zusatzspiel einer geraden Runde braucht
+   einen späteren Block als das reguläre Spiel des Spielers, der in der Vorrunde pausiert hat. */
+function schedule(n,R,c){
+  const m=Math.floor(n/2),bl=[];
+  for(let r=0;r<R;r++){
+    if(!(n%2&&r%2===1)){
+      for(let i=0;i<m;i+=c)bl.push({r,items:Array.from({length:Math.min(c,m-i)},(_,k)=>({t:"m",j:i+k}))});
+    }else{
+      const w=Math.ceil((m+1)/c);
+      for(let b=0;b<w;b++){
+        const cnt=b<w-1?c:m-c*(w-1),items=Array.from({length:cnt},(_,k)=>({t:"m",j:b*c+k}));
+        if(b===w-1)items.push({t:"x"});
+        bl.push({r,items});
+      }
+    }
+  }
+  return bl;
+}
+/* Buchung: je Platz von Turnierbeginn bis zum Ende seines letzten Spiels, auf 30 min aufgerundet, mindestens 60 min */
+function plan(n,R,c,dur,brk,ov){
+  if(ov){ /* Prognose bei überlappenden Runden: jedes Spiel startet, sobald ein Platz frei ist */
+    const G=n*R/2,w=Math.ceil(G/c),step=dur+brk;
+    const need=Array.from({length:c},(_,k)=>Math.max(60,Math.ceil(((Math.ceil((G-k)/c)-1)*step+dur+wu())/30)*30));
+    return{waves:w,total:w*dur+(w-1)*brk,need,step};
+  }
+  const bl=schedule(n,R,c),step=dur+brk,w=bl.length,last=Array(c).fill(0);
+  bl.forEach((b,i)=>{for(let k=0;k<b.items.length&&k<c;k++)last[k]=i});
+  const need=last.map(i=>Math.max(60,Math.ceil((i*step+dur+wu())/30)*30));
+  return{waves:w,total:w*dur+(w-1)*brk,blocks:bl,need,step};
+}
+const split=T=>{const a=Array(Math.floor(T/120)).fill(120),r=T%120;if(r===30){a.pop();a.push(90,60)}else if(r)a.push(r);return a};
+const groups=need=>{const g=[];need.forEach((T,i)=>{const l=g[g.length-1];if(l&&l.T===T)l.to=i+1;else g.push({T,from:i+1,to:i+1})});return g};
+/* Platznamen: frei wählbar, sonst „Platz 1“ … */
+const cname=k=>{const x=S?S.cn:clean(CNM);return x&&x[k]?x[k]:"Platz "+(k+1)};
+const courtLbl=g=>g.from===g.to?"Platz "+g.from:"Platz "+g.from+" bis "+g.to;
+
+const allM=()=>S.games?S.games:S.rounds.flatMap(rd=>rd.m.concat(rd.x?[rd.x]:[]));
+function stats(){
+  const st=S.names.map((nm,i)=>({i,nm,p:0,w:0,d:0,l:0,gf:0,ga:0,g:0,b:0}));
+  if(S.rounds)for(const rd of S.rounds)if(rd.bye!=null)st[rd.bye].b++;
+  for(const m of allM()){
+    if(!done(m))continue;
+    const A=st[m.a],B=m.h?{gf:0,ga:0,g:0,p:0,w:0,l:0,d:0}:st[m.b];   /* Zusatzspiel am Ende (m.h): zählt nur für Spieler a */
+    A.gf+=m.sa;A.ga+=m.sb;B.gf+=m.sb;B.ga+=m.sa;A.g++;B.g++;
+    if(m.sa>m.sb){A.p+=3;A.w++;B.l++}else if(m.sa<m.sb){B.p+=3;B.w++;A.l++}else{A.p++;B.p++;A.d++;B.d++}
+  }
+  return st;
+}
+/* Endwertung: Punkte, Entscheidungsspiele (falls nötig), Direktvergleich, Game-Differenz, Buchholz, Siege, erzielte Games.
+   Gepaart wird davon unabhängig nach Punkten, Game-Differenz, Siegen und erzielten Games. */
+const isOver=()=>{const a=allM();return S.games?rollLeft()===0&&helpLeft()===0&&a.every(done):S.rounds.length>=S.R&&a.every(done)&&!extraRound()};
+/* Runde für Runde: Fehlt nach der letzten Runde einem Spieler ein Spiel (z. B. weil sein Gegner ausgeschieden ist), folgt eine Runde mit Zusatzspielen.
+   Zwei Spieler mit fehlenden Spielen spielen gegeneinander. Sonst spielt der Spieler gegen einen tabellenähnlichen Gegner, der schon genug Spiele hat; das Spiel zählt nur für den fehlenden Spieler. */
+function extraRound(){
+  if(!S||S.games||S.rounds.length<S.R)return null;
+  const cnt=Array(S.n).fill(0),played=new Set();
+  allM().forEach(m=>{cnt[m.a]++;if(!m.h){cnt[m.b]++;played.add(key(m.a,m.b))}});
+  const act=[...Array(S.n).keys()].filter(i=>!isOut(i)),need=act.filter(i=>cnt[i]<S.R).sort((x,y)=>cnt[x]-cnt[y]||x-y);
+  if(!need.length)return null;
+  const ss=stats(),used=new Set(),m=[];
+  for(const a of need){
+    if(used.has(a))continue;
+    const b=need.find(x=>x!==a&&!used.has(x)&&!played.has(key(a,x)));
+    if(b!=null){m.push({a,b,sa:null,sb:null,eq:1});used.add(a);used.add(b);continue}
+    const sc=i=>[played.has(key(a,i))?1:0,Math.abs(ss[i].p-ss[a].p),Math.abs((ss[i].gf-ss[i].ga)-(ss[a].gf-ss[a].ga)),i];
+    const c=act.filter(i=>i!==a&&!used.has(i)&&cnt[i]>=S.R).sort((x,y)=>{const u=sc(x),v=sc(y);for(let j=0;j<u.length;j++)if(u[j]!==v[j])return u[j]-v[j];return 0});
+    if(c.length){m.push({a,b:c[0],sa:null,sb:null,h:1,eq:1});used.add(a);used.add(c[0])}
+  }
+  return m.length?{m,bye:null,fin:1}:null;
+}
+function ranking(){
+  const st=stats();
+  st.forEach(s=>{s.bh=0;s.dp=0;s.sp=0;s.sd=0;s.out=isOut(s.i)});
+  allM().filter(done).forEach(m=>{const A=st[m.a],B=st[m.b];A.bh+=B.p;if(m.h)return;B.bh+=A.p;
+    if(A.p===B.p){if(m.sa>m.sb)A.dp+=3;else if(m.sa<m.sb)B.dp+=3;else{A.dp++;B.dp++}}});
+  (S.so||[]).filter(done).forEach(m=>{const A=st[m.a],B=st[m.b];A.sd+=m.sa-m.sb;B.sd+=m.sb-m.sa;
+    if(m.sa>m.sb)A.sp+=3;else if(m.sa<m.sb)B.sp+=3;else{A.sp++;B.sp++}});
+  const k=s=>[s.out?0:1,s.p,s.sp,s.sd,s.dp,s.gf-s.ga,s.bh,s.w,s.gf];
+  const c=(x,y)=>{const a=k(x),b=k(y);for(let j=0;j<a.length;j++)if(a[j]!==b[j])return b[j]-a[j];return 0};
+  st.sort((x,y)=>c(x,y)||x.i-y.i);
+  let rk=0;st.forEach((s,j)=>{if(!j||c(s,st[j-1]))rk=j+1;s.rk=s.out?"–":rk});
+  return st;
+}
+/* Punktgleiche Gruppen (2 bis 4 Spieler), die um die Plätze 1 bis 3 spielen. Größere Gruppen entscheiden Direktvergleich und Buchholz. */
+function soBlocks(){
+  if(!S||!isOver())return[];
+  const st=stats().filter(s=>!isOut(s.i)).sort((x,y)=>y.p-x.p||x.i-y.i),out=[];
+  for(let k=0;k<st.length&&k<3;){let e=k;while(e+1<st.length&&st[e+1].p===st[k].p)e++;
+    if(e>k&&e-k<4)out.push(st.slice(k,e+1).map(s=>s.i));k=e+1}
+  return out;
+}
+function syncSO(){
+  const need=[];soBlocks().forEach(b=>{for(let i=0;i<b.length;i++)for(let j=i+1;j<b.length;j++)need.push([b[i],b[j]])});
+  const old=S.so||[],nw=need.map(([a,b])=>old.find(m=>(m.a===a&&m.b===b)||(m.a===b&&m.b===a))||{a,b,sa:null,sb:null});
+  if(JSON.stringify(nw)!==JSON.stringify(old)){S.so=nw;save()}
+}
+let dropArmed=null;
+function renderOut(){
+  const el=$("#outc");if(!el||!S)return;
+  const act=[...Array(S.n).keys()].filter(i=>!isOut(i)),gone=(S.out||[]).map(i=>esc(S.names[i])).join(", ");
+  const note=gone?`<p class="hint">Ausgeschieden: ${gone}</p>`:"";
+  if(act.length<=MINN||isOver()){el.innerHTML=note;return}
+  const keepSel=$("#dropsel"),sel=keepSel?+keepSel.value:act[0];
+  el.innerHTML=`<h2>Spieler scheidet aus</h2><p class="hint">Seine bisherigen Spiele zählen weiter. Offene Spiele mit ihm entfallen, die anderen spielen ohne ihn weiter und stehen mit ihm unten in der Tabelle. Fehlt dadurch einem Spieler ein Spiel, bekommt er am Ende ein Zusatzspiel gegen einen tabellenähnlichen Gegner. Es zählt nur für ihn. Das lässt sich nicht rückgängig machen. Mit 4 Spielern kann niemand mehr ausscheiden.</p>${note}<div class="actions"><select id="dropsel" aria-label="Spieler, der ausscheidet">${act.map(i=>`<option value="${i}"${i===sel?" selected":""}>${esc(S.names[i])}</option>`).join("")}</select><button class="${dropArmed!=null?"danger":"quiet"}" onclick="dropPlayer()">${dropArmed!=null?"Wirklich ausscheiden lassen?":"Ausscheiden lassen"}</button></div>`;
+}
+function doDrop(i){
+  S.out=(S.out||[]).concat(i);
+  if(S.games)S.games=S.games.filter(m=>done(m)||(m.a!==i&&m.b!==i));
+  else{
+    const rd=S.rounds[S.rounds.length-1],lost=[];
+    const keep=m=>{if(done(m)||(m.a!==i&&m.b!==i))return true;lost.push(m.a===i?m.b:m.a);return false};
+    rd.m=rd.m.filter(keep);if(rd.x&&!keep(rd.x))delete rd.x;
+    if(rd.bye===i)rd.bye=null;
+    /* Gegner des Ausgeschiedenen: Pausiert jemand (und spielt nicht schon das Zusatzspiel), spielen beide ein Ausgleichsspiel, damit beiden kein Spiel fehlt */
+    lost.forEach(o=>{
+      const b=rd.bye;
+      if(b!=null&&!isOut(b)&&!(rd.x&&(rd.x.a===b||rd.x.b===b))){rd.m.push({a:b,b:o,sa:null,sb:null,eq:1});rd.bye=null}
+      else if(rd.bye==null)rd.bye=o;else(rd.free=rd.free||[]).push(o);
+    });
+  }
+}
+function dropPlayer(){
+  const sel=$("#dropsel");if(!sel||!S)return;
+  const i=+sel.value,act=[...Array(S.n).keys()].filter(x=>!isOut(x));
+  if(isOut(i)||act.length<=MINN||isOver())return;
+  if(dropArmed!==i){dropArmed=i;renderOut();setTimeout(()=>{if(dropArmed===i){dropArmed=null;if(S)renderOut()}},4000);return}
+  dropArmed=null;doDrop(i);
+  justDone.clear();undoArmed=false;save();render();
+}
+function soScore(i,side,v){
+  const m=(S.so||[])[i];if(!m)return;
+  const x=v===""?null:Math.max(0,Math.min(99,parseInt(v,10)));
+  m[side==="a"?"sa":"sb"]=Number.isNaN(x)?null:x;save();
+  $("#champ").innerHTML=champHtml();renderTable();
+}
+function renderSO(){
+  const el=$("#so");if(!el)return;
+  const so=S.so||[];
+  if(!so.length){el.innerHTML="";return}
+  const row=(m,i)=>`<div class="mw rc${i%6}"><span class="tag">Entscheidungsspiel ${i+1}</span><div class="m">
+      <div class="a ${done(m)&&m.sa>m.sb?"win":""}">${esc(S.names[m.a])}</div>
+      <input type="number" min="0" max="99" inputmode="numeric" enterkeyhint="next" aria-label="Games ${esc(S.names[m.a])}" value="${m.sa??""}" oninput="soScore(${i},'a',this.value)">
+      <div class="sep">:</div>
+      <input type="number" min="0" max="99" inputmode="numeric" enterkeyhint="next" aria-label="Games ${esc(S.names[m.b])}" value="${m.sb??""}" oninput="soScore(${i},'b',this.value)">
+      <div class="b ${done(m)&&m.sb>m.sa?"win":""}">${esc(S.names[m.b])}</div>
+    </div></div>`;
+  el.innerHTML=`<section class="panel"><div class="head"><h2>Entscheidungsspiele</h2></div><p class="hint">Bei den Plätzen 1 bis 3 sind Spieler punktgleich. Sie spielen die Reihenfolge unter sich aus. Gewertet wird wie sonst: Sieg 3 Punkte${S.draw?", Unentschieden 1 Punkt":""}. Bleibt es danach gleich, zählen Direktvergleich, Game-Differenz und Buchholz.</p><div class="matches">${so.map(row).join("")}</div></section>`;
+}
+function champHtml(){
+  if(!isOver())return"";
+  const st=ranking(),so=S.so||[];
+  if(so.some(m=>!done(m)))return`<div class="champ"><strong>Entscheidungsspiele</strong><span>Die Plätze 1 bis 3 werden noch unter punktgleichen Spielern ausgespielt.</span></div>`;
+  const top=st.filter(s=>s.rk===1),nm=s=>esc(s.nm);
+  const pod=[2,3].map(r=>{const g=st.filter(s=>s.rk===r);return g.length?`${r}. ${g.map(nm).join(", ")}`:""}).filter(Boolean);
+  const podium=pod.length?`<span>${pod.join("  ·  ")}</span>`:"";
+  return top.length>1?
+    `<div class="champ"><strong>Gleichstand an der Spitze</strong><span>${top.map(nm).join(", ")}</span><span>Auch nach Direktvergleich, Game-Differenz, Buchholz, Siegen und erzielten Games gleich.</span>${podium}</div>`:
+    `<div class="champ"><span class="k">Turniersieger</span><strong>${nm(top[0])}</strong><span>${top[0].p} Punkte, ${top[0].w} ${top[0].w===1?"Sieg":"Siege"}</span>${podium}</div>`;
+}
+
+let nodes=0;
+function pair(l,pl){
+  if(!l.length)return[];
+  if(++nodes>150000)return null;
+  const a=l[0],r=l.slice(1);
+  for(let k=0;k<r.length;k++){
+    const b=r[k];
+    if(pl&&pl.has(key(a,b)))continue;
+    const p=pair(r.filter((_,j)=>j!==k),pl);
+    if(p)return[[a,b],...p];
+  }
+  return null;
+}
+
+function makeRound(first){
+  const st=stats();
+  const act=[...Array(S.n).keys()].filter(i=>!isOut(i));
+  const order=first?shuffle(act):st.slice().sort(cmp).map(s=>s.i).filter(i=>!isOut(i));
+  const played=new Set();
+  S.rounds.forEach(rd=>rd.m.concat(rd.x?[rd.x]:[]).forEach(m=>played.add(key(m.a,m.b))));
+  const second=S.rounds.length%2===1;
+  const pv=S.rounds.length?S.rounds[S.rounds.length-1].bye:null;
+  let cands=[null];
+  const rnd=st.map(()=>Math.random());
+  if(act.length%2)cands=act.slice().sort((x,y)=>st[x].b-st[y].b||(eq(st[x],st[y])?rnd[x]-rnd[y]:order.indexOf(y)-order.indexOf(x))).filter(i=>!(second&&i===pv));
+  for(const [relaxed,noRe] of [[false,true],[false,false],[true,false]]){
+    for(const c of cands){
+      if(noRe&&second&&c!=null&&played.has(key(pv,c)))continue;
+      nodes=0;
+      const p=pair(order.filter(i=>i!==c),relaxed?null:played);
+      if(p){const rd={m:p.map(([a,b])=>({a,b,sa:null,sb:null})),bye:c};if(second&&c!=null&&pv!=null&&!isOut(pv))rd.x={a:pv,b:c,sa:null,sb:null};return rd}
+    }
+  }
+  return null;
+}
+
+/* Überlappende Runden: Spiele werden einzeln angesetzt, sobald ein Platz und passende Spieler frei sind.
+   g zählt auch laufende Spiele. Jede Runde bleibt sauber: gepaart werden bevorzugt Spieler mit gleich vielen Spielen,
+   nach Tabelle. Bei ungerader Spielerzahl darf der Übrige eine Stufe höher spielen (er hat dann in der Vorrunde pausiert).
+   Sonst wartet ein Platz lieber, statt ein Rematch oder eine ungleiche Paarung anzusetzen, solange noch Spiele laufen. */
+function rollState(){
+  const g=Array(S.n).fill(0),busy=new Set(),played=new Set(),hp=new Set(),courts=new Set();let open=0;
+  S.games.forEach(m=>{g[m.a]++;if(!m.h){g[m.b]++;played.add(key(m.a,m.b))}else hp.add(key(m.a,m.b));if(!m.fin&&!done(m)){busy.add(m.a);busy.add(m.b);courts.add(m.c);open++}});
+  (S.out||[]).forEach(i=>{g[i]=S.R}); /* Ausgeschiedene gelten als fertig: sie werden nicht mehr angesetzt und brauchen keine Spiele mehr */
+  return{g,busy,played,hp,courts,open};
+}
+/* Noch anzusetzende Spiele: Jeder verbleibende Spieler braucht R Spiele, ein Spiel deckt zwei ab (bei ungerader Summe bleibt einer ein Spiel kürzer) */
+function needSum(){
+  const st=rollState();let t=0,mx=0;
+  for(let i=0;i<S.n;i++)if(!isOut(i)){const d=Math.max(0,S.R-st.g[i]);t+=d;if(d>mx)mx=d}
+  return[t,mx];
+}
+function rollLeft(){
+  const[t,mx]=needSum();
+  return Math.min(Math.floor(t/2),t-mx); /* ein Spieler, der mehr braucht als alle anderen zusammen, bleibt kürzer */
+}
+/* Zusatzspiele am Ende: Was nach allen regulären Spielen noch an Spielen fehlt, holt der betroffene Spieler gegen einen Gegner nach,
+   der schon genug Spiele hat. Das Ergebnis zählt nur für den fehlenden Spieler. */
+function helpLeft(){
+  if(!S||!S.games)return 0;
+  const[t]=needSum();
+  return t-2*rollLeft();
+}
+function helpPick(st){
+  if(helpLeft()<=0||st.open>0)return[];
+  const act=[...Array(S.n).keys()].filter(i=>!isOut(i)),need=act.filter(i=>st.g[i]<S.R).sort((x,y)=>st.g[x]-st.g[y]||x-y);
+  if(!need.length)return[];
+  const a=need[0],ss=stats(),sa=ss[a],pos=new Map(rollOrder().map((p,i)=>[p,i]));
+  const cand=act.filter(i=>i!==a&&st.g[i]>=S.R&&!st.busy.has(i));
+  if(!cand.length)return[];
+  const sc=i=>[st.played.has(key(a,i))||st.hp.has(key(a,i))?1:0,Math.abs(ss[i].p-sa.p),Math.abs((ss[i].gf-ss[i].ga)-(sa.gf-sa.ga)),pos.get(i)];
+  cand.sort((x,y)=>{const u=sc(x),v=sc(y);for(let j=0;j<u.length;j++)if(u[j]!==v[j])return u[j]-v[j];return 0});
+  return[[a,cand[0],1]];
+}
+function rollOrder(){
+  const rk=S.rk;
+  return stats().sort((x,y)=>cmp0(x,y)||rk[x.i]-rk[y.i]).map(s=>s.i);
+}
+function pairBT(l,pl){
+  if(!l.length)return[];
+  if(++nodes>20000)return[];
+  const a=l[0],r=l.slice(1);
+  for(let k=0;k<r.length;k++){
+    const b=r[k];
+    if(pl.has(key(a,b)))continue;
+    const p=pairBT(r.filter((_,j)=>j!==k),pl);
+    if(p)return[[a,b],...p];
+  }
+  return null;
+}
+/* Lässt sich der Rest des Turniers noch ohne Wiederholungsspiele spielen? d[i] = noch offene Spiele von Spieler i, pl = schon gespielte Paarungen.
+   Gesucht ist ein Graph ohne gespielte Kanten, in dem jeder Spieler genau d[i] Gegner hat. Gibt es nach 3000 Schritten kein Urteil, gilt „ja“. */
+let feasWork=0,simFast=false; /* simFast: nur für die Zeitschätzung in der Einrichtung, rechnet ohne die aufwendigen Prüfungen */
+function feasible(d,pl){
+  const n=d.length,rem=d.map(x=>Math.max(0,x));let cnt=0;
+  let slack=rem.reduce((a,b)=>a+b,0)%2; /* ungerade Summe (nach Ausscheiden): ein Spieler darf ein Spiel kürzer bleiben */
+  const rec=()=>{
+    if(++cnt>1500){feasWork+=cnt;return true}
+    let v=-1;for(let i=0;i<n;i++)if(rem[i]>0&&(v<0||rem[i]>rem[v]))v=i;
+    if(v<0)return true;
+    const c=[];for(let u=0;u<n;u++)if(u!==v&&rem[u]>0&&!pl.has(key(v,u)))c.push(u);
+    const k=rem[v];
+    if(c.length<k-slack)return false;
+    c.sort((x,y)=>rem[y]-rem[x]);
+    const pick=(start,left)=>{
+      if(left===0){rem[v]=0;const ok=rec();rem[v]=k;return ok}
+      for(let i=start;i<=c.length-left;i++){const u=c[i];rem[u]--;const ok=pick(i+1,left-1);rem[u]++;if(ok||cnt>1500)return true}
+      return false;
+    };
+    if(c.length>=k&&pick(0,k))return true;
+    if(slack>0&&c.length>=k-1){slack--;const ok=pick(0,k-1);slack++;return ok}
+    return false;
+  };
+  const r=rec();feasWork+=cnt;return r;
+}
+const refMemo=new Map();
+/* Notlösung: Findet die Prüfung keine vollständig aufgehende Ansetzung mehr (z. B. nach Ausscheiden und Vorsprung-Grenze), spielen die Spieler mit den meisten fehlenden Spielen gegeneinander, damit das Turnier nicht hängt. */
+function rescuePick(st,free){
+  const pool=[...Array(S.n).keys()].filter(i=>!isOut(i)&&!st.busy.has(i)&&st.g[i]<S.R).sort((x,y)=>st.g[x]-st.g[y]||x-y),out=[],used=new Set(),cap=Math.min(free,rollLeft());
+  for(const a of pool){
+    if(used.has(a)||out.length>=cap)continue;
+    let b=pool.find(x=>x!==a&&!used.has(x)&&!st.played.has(key(a,x)));
+    if(b==null)b=pool.find(x=>x!==a&&!used.has(x));
+    if(b!=null){out.push([a,b]);used.add(a);used.add(b)}
+  }
+  return out;
+}
+function rollPick(st,free){
+  if(S.games&&rollLeft()===0)return helpPick(st);
+  const ps=rollPick0(st,free);
+  return ps.length||st.open>0?ps:rescuePick(st,free);
+}
+function rollPick0(st,free){
+  const g=st.g.slice(),n=S.n,R=S.R,order=rollOrder(),pos=new Map(order.map((p,i)=>[p,i]));
+  const pool=order.filter(i=>!st.busy.has(i)&&g[i]<R).sort((x,y)=>g[x]-g[y]||pos.get(x)-pos.get(y));
+  const lvl=L=>g.filter(x=>x===L).length;
+  /* Warten auf feste Platzierung: Ein Paar wird nur angesetzt, wenn sich seine Platzierung in der Gruppe (gleich viele Spiele)
+     durch noch laufende Spiele nicht mehr ändern kann. Laufende Spieler können 0 oder 3 Punkte (bzw. 1 bei Remis) dazugewinnen. */
+  const wait=!!S.wait,sts=wait?stats():null;
+  const pend=L=>wait&&[...st.busy].some(i=>g[i]===L);
+  const settled=(a,x)=>{
+    if(!wait||!pend(g[a]))return true;
+    const grp=[];for(let i=0;i<n;i++)if(g[i]===g[a])grp.push(i);
+    const upP=[],dnP=[];let aboveA=0,aboveB=0;
+    for(const p of grp){
+      if(p===a||p===x)continue;
+      if(!st.busy.has(p)){const before=q=>pos.get(p)<pos.get(q);if(before(a))aboveA++;if(before(x))aboveB++;continue}
+      const side=q=>sts[p].p>sts[q].p?1:sts[p].p+3<sts[q].p?-1:0;
+      const sa=side(a),sb=side(x);
+      if(!sa||sa!==sb)return false;
+      if(sa===1){aboveA++;aboveB++;upP.push(p)}else dnP.push(p);
+    }
+    const pa=aboveA+(pos.get(a)<pos.get(x)?0:1)+1,pb=aboveB+(pos.get(x)<pos.get(a)?0:1)+1;
+    if(Math.abs(pa-pb)!==1||Math.min(pa,pb)%2!==1)return false;
+    /* Genaue Prüfung: Für jeden möglichen Ausgang der laufenden Spiele der Gruppe (und jede mögliche Reihenfolge bei Punktgleichstand)
+       wird die Paarung so gebildet, wie sie ohne Warten gebildet würde. Das Paar muss in allen Fällen vorkommen. */
+    if(simFast)return true;
+    const refs=refSets(st.g[a]);
+    return !!refs&&refs.every(r=>r.has(key(a,x)));
+  };
+  /* Alle Paarungen, die für die Gruppe mit st.g===L entstehen können, wenn die laufenden Spiele beendet sind (null: zu viele Fälle) */
+  const refCache=new Map();
+  const refSets=L=>{
+    if(refCache.has(L))return refCache.get(L);
+    /* Gleicher Spielstand (nur beendete Ergebnisse zählen) ergibt gleiche Mengen: merken, damit Tippen im Ergebnisfeld nicht neu rechnet */
+    const sig=S.rk.join(",")+"|"+(S.out||[]).join(".")+"|"+S.draw+"|"+L+"|"+S.games.map(m=>m.a+","+m.b+","+(done(m)?m.sa+":"+m.sb:"o")+(m.fin?"f":"")).join(";");
+    let res=refMemo.get(sig);
+    if(res===undefined){
+      try{res=buildRefs(L)}catch(e){res=null}
+      if(refMemo.size>40)refMemo.clear();
+      refMemo.set(sig,res);
+    }
+    refCache.set(L,res);return res;
+  };
+  const canFinish=rem=>{
+    nodes=0;
+    if(rem.length%2===0)return pairBT(rem,st.played)!==null;
+    return rem.some((_,k)=>{nodes=0;return pairBT(rem.filter((_,j)=>j!==k),st.played)!==null});
+  };
+  const matchOf=order=>{
+    const used=new Set(),out=new Set();
+    /* ohne bereits gespielte Paare in der Gruppe: der Reihe nach 1–2, 3–4 …, bei ungerader Zahl bleibt der Letzte übrig */
+    if(!order.some((u,i)=>order.some((v,j)=>j>i&&st.played.has(key(u,v))))){
+      for(let i=0;i+1<order.length;i+=2)out.add(key(order[i],order[i+1]));
+      return out;
+    }
+    for(const a of order){
+      if(used.has(a))continue;
+      for(const x of order){
+        if(x===a||used.has(x)||st.played.has(key(a,x)))continue;
+        if(canFinish(order.filter(y=>y!==a&&y!==x&&!used.has(y)))){used.add(a);used.add(x);out.add(key(a,x));break}
+      }
+    }
+    return out;
+  };
+  const buildRefs=L=>{
+    const grp=[];for(let i=0;i<n;i++)if(st.g[i]===L&&st.g[i]<R)grp.push(i);
+    const fixed=grp.filter(i=>!st.busy.has(i)).sort((u,v)=>pos.get(u)-pos.get(v)),pend=grp.filter(i=>st.busy.has(i));
+    const runs=S.games.filter(m=>!m.fin&&!done(m)&&(pend.includes(m.a)||pend.includes(m.b)));
+    const opts=S.draw?3:2;
+    if(Math.pow(opts,runs.length)>2200)return null;
+    /* Ungerade Spielerzahl: Ein einzelner Spieler einer niedrigeren Stufe (Pausierender) spielt gegen den Bestplatzierten der Gruppe,
+       sobald deren laufende Spiele beendet sind. Das verschiebt die Paarung der übrigen. */
+    const low=[];for(let i=0;i<n;i++)if(st.g[i]===L-1&&st.g[i]<R)low.push(i);
+    let vis=null;
+    if(low.length%2===1){if(low.length>1||st.busy.has(low[0]))return null;vis=low[0]}
+    const shift=list=>{
+      if(vis==null)return list;
+      const k=list.findIndex(y=>!st.played.has(key(vis,y)));
+      return k<0?null:[...list.slice(0,k),...list.slice(k+1)];
+    };
+    const refs=[],mm=new Map();let budget=6000;
+    for(let c3=0,tot=Math.pow(opts,runs.length);c3<tot;c3++){
+      const pts=new Map(grp.map(i=>[i,sts[i].p]));let x=c3;
+      runs.forEach(m=>{const o=x%opts;x=Math.floor(x/opts);
+        const add=(i,d)=>{if(pts.has(i)&&pend.includes(i))pts.set(i,pts.get(i)+d)};
+        if(o===0){add(m.a,3)}else if(o===1){add(m.b,3)}else{add(m.a,1);add(m.b,1)}});
+      /* laufende Spieler an jeder möglichen Stelle innerhalb ihrer Punktgruppe einsortieren */
+      const rec=(k,list)=>{
+        if(budget<=0)return false;
+        if(k===pend.length){budget--;const l2=shift(list);if(!l2)return false;const mk=l2.join();let ms=mm.get(mk);if(!ms){ms=matchOf(l2);mm.set(mk,ms)}refs.push(ms);return true}
+        const p=pend[k],P=pts.get(p);
+        let lo=0;while(lo<list.length&&pts.get(list[lo])>P)lo++;
+        let hi=lo;while(hi<list.length&&pts.get(list[hi])===P)hi++;
+        for(let at=lo;at<=hi;at++)if(!rec(k+1,[...list.slice(0,at),p,...list.slice(at)]))return false;
+        return true;
+      };
+      if(!rec(0,fixed))return null;
+    }
+    return refs;
+  };
+  const fits=(a,b)=>{let tot=0,mx=0;for(let i=0;i<n;i++){const d=R-g[i]-(i===a||i===b?1:0);tot+=d;if(d>mx)mx=d}return 2*mx<=tot+(tot&1)};
+  /* Stufen: 0 gleiche Spielzahl ohne Rematch, 1 gleiche Spielzahl mit Rematch, 2 beliebig ohne Rematch, 3 alles. Bei „Abwarten“ kommt Stufe 2 vor 1.
+     Stufen ab 1 nur, wenn kein Spiel mehr läuft und sonst nichts mehr passieren würde. */
+  /* Vorausschau: Die ganze Gruppe mit gleicher Spielzahl (auch Spieler, die noch spielen) muss sich ohne Rematch paaren lassen */
+  /* Vorausschau auf das ganze Turnier: Ein Paar wird (ohne Wiederholung) nur angesetzt, wenn die übrigen Spiele danach noch ohne
+     Wiederholung möglich sind. Gilt nur, wenn das jetzt überhaupt noch möglich ist (bei mehr Runden als Gegnern nicht). */
+  feasWork=0;
+  const guardOn=!simFast&&feasible(g.map(x=>R-x),st.played);
+  let pl=null;const feasMemo=new Map();
+  const gok=(a,x,tier)=>{
+    if(!guardOn||tier===1||tier===3||feasWork>60000)return true;
+    const k=key(a,x),d=g.map((v,i)=>R-v-(i===a||i===x?1:0));
+    const ck=d.join()+"|"+k+"|"+[...pl].filter(q=>!st.played.has(q)).sort().join();
+    let r=feasMemo.get(ck);
+    if(r===undefined){pl.add(k);r=feasible(d,pl);pl.delete(k);      /* gespeichert wird nur, wenn die Rechnung nicht abgebrochen wurde */
+      if(feasWork<=60000)feasMemo.set(ck,r)}
+    return r;
+  };
+  let used=new Set();
+  const rest=(a,x)=>{
+    const grp=[];for(let i=0;i<n;i++)if(g[i]===g[a]&&i!==a&&i!==x&&!used.has(i))grp.push(i);
+    const can=l=>{nodes=0;return pairBT(l,st.played)!==null||nodes>20000};
+    return grp.length%2?grp.some((_,k)=>can(grp.filter((_,j)=>j!==k))):can(grp);
+  };
+  /* Vorsprung-Grenze (nur „Sofort weiter“): Kein Spieler soll nach dem Ansetzen mehr als S.lead Spiele mehr haben als der Spieler mit den wenigsten.
+     Läuft nichts mehr und nichts ginge, wird die Grenze aufgehoben, bevor ein Wiederholungsspiel angesetzt wird. */
+  const leadOn=!!S.lead&&!S.wait;
+  const go=(tier,nolead,extra=0)=>{
+    const lead=leadOn&&!nolead,LD=(S.lead||0)+extra,minG=()=>{let m=1e9;for(let i=0;i<n;i++)if(g[i]<R&&g[i]<m)m=g[i];return m};
+    used=new Set();pl=new Set(st.played);const out=[],tmp=g.slice();
+    /* Reihenfolge der Runden: Wartet in einer Stufe ein Paar nur auf die feste Platzierung, wird in höheren Stufen (späteren Runden)
+       nichts angesetzt. Niemand spielt eine spätere Runde, solange Spieler einer früheren Runde schon bereitstehen. */
+    let blockLv=-1;
+    for(const a of pool){
+      if(out.length>=free)break;
+      if(used.has(a))continue;
+      if(blockLv>=0&&g[a]>blockLv)continue;
+      const mg=lead?minG():0;
+      if(lead&&g[a]+1-mg>LD)continue;
+      const ok=x=>x!==a&&!used.has(x)&&(tier===1||tier===3||!st.played.has(key(a,x)))&&(!lead||g[x]+1-mg<=LD)&&fits(a,x);
+      let b=tier===0?pool.find(x=>ok(x)&&g[x]===g[a]&&rest(a,x)&&settled(a,x)&&gok(a,x,tier)):null;
+      if(b==null)b=pool.find(x=>ok(x)&&(tier>=2||g[x]===g[a])&&settled(a,x)&&gok(a,x,tier));
+      if(b==null&&tier<=1&&lvl(g[a])%2===1&&!pend(g[a])&&!pend(g[a]+1))b=pool.find(x=>ok(x)&&g[x]===g[a]+1&&gok(a,x,tier));
+      if(b==null){
+        if(tier===0&&blockLv<0&&pool.some(x=>ok(x)&&g[x]===g[a]))blockLv=g[a];
+        continue;
+      }
+      used.add(a);used.add(b);out.push([a,b]);g[a]++;g[b]++;pl.add(key(a,b));
+    }
+    for(let i=0;i<n;i++)g[i]=tmp[i];
+    return out;
+  };
+  let p=go(0);
+  for(let e=1;e<=R&&!p.length&&leadOn&&!st.open;e++)p=go(0,false,e);
+  for(const t of (S.wait?[2,1,3]:[1,2,3])){if(p.length||st.open)break;p=go(t,true)} /* Abwarten, nichts läuft mehr: lieber ein Gegner aus einer anderen Runde ohne Wiederholung (2) als dieselben Spieler nochmal (1, 3) */
+  return p;
+}
+function rollAdd(){
+  const st=rollState(),free=[...Array(S.courts).keys()].filter(k=>!st.courts.has(k));
+  if(!free.length)return 0;
+  const ps=rollPick(st,free.length),k=S.games.reduce((x,m)=>Math.max(x,m.k),-1)+1;
+  if(ps.length)S.games.forEach(m=>{if(done(m)&&!m.fin)m.fin=k}); /* Beendete Spiele sind ab jetzt abgeschlossen: ihre Spieler und Plätze sind wieder vergeben */
+  ps.forEach(([a,b,h],i)=>S.games.push(h?{a,b,sa:null,sb:null,c:free[i],k,h:1}:{a,b,sa:null,sb:null,c:free[i],k}));
+  return ps.length;
+}
+
+/* Einrichtung */
+/* Namenseingabe: ein Feld je Spieler und je Platz. Leere Felder bekommen A, B, C … bzw. Platz 1, Platz 2 … */
+let NM=[],CNM=[];
+const clean=a=>a.map(x=>(x||"").trim().slice(0,24));
+const given=()=>clean(NM);
+const typed=n=>given().slice(0,n).filter(Boolean);
+const fullNames=n=>{
+  const g=given().slice(0,n),used=new Set(g.filter(Boolean).map(x=>x.toLowerCase()));let c=0;
+  return Array.from({length:n},(_,i)=>{if(g[i])return g[i];let l;do{l=letters(c++)}while(used.has(l.toLowerCase()));used.add(l.toLowerCase());return l});
+};
+function nameFields(){
+  const el=document.getElementById("nf");if(!el)return;
+  const n=+$("#n").value||MINN,c=Math.min(Math.floor(n/2),+$("#c").value||1);
+  const f=(arr,i,ph,kind,lab)=>`<input type="text" maxlength="24" autocomplete="off" data-k="${kind}" data-i="${i}" placeholder="${esc(ph)}" aria-label="${lab}" value="${esc(arr[i]||"")}">`;
+  el.innerHTML=`<div class="nfg"><h3>Spieler</h3><div class="nfl">${Array.from({length:n},(_,i)=>f(NM,i,letters(i),"p","Name Spieler "+(i+1))).join("")}</div></div>
+    <div class="nfg"><h3>Plätze</h3><div class="nfl">${Array.from({length:c},(_,i)=>f(CNM,i,"Platz "+(i+1),"c","Name Platz "+(i+1))).join("")}</div></div>
+    <p class="hint">Leere Felder heißen A, B, C … bzw. Platz 1, Platz 2 … Eine Liste mit Komma oder Zeilenumbruch lässt sich in ein Feld einfügen und verteilt sich auf die folgenden.</p><p class="hint" id="nh" aria-live="polite"></p>`;
+  nameHint();
+}
+document.addEventListener("input",e=>{
+  const t=e.target;if(!t||!t.matches||!t.matches("#nf input"))return;
+  (t.dataset.k==="p"?NM:CNM)[+t.dataset.i]=t.value;
+  if(t.dataset.k==="c")renderPlan();else nameHint();
+});
+document.addEventListener("paste",e=>{
+  const t=e.target;if(!t||!t.matches||!t.matches("#nf input"))return;
+  const txt=(e.clipboardData&&e.clipboardData.getData("text"))||"";
+  if(!/[,;\n\t]/.test(txt))return;
+  e.preventDefault();
+  const parts=txt.split(/[,;\n\t]/).map(x=>x.trim().slice(0,24)).filter(Boolean),arr=t.dataset.k==="p"?NM:CNM;
+  const all=[...document.querySelectorAll('#nf input[data-k="'+t.dataset.k+'"]')];
+  parts.forEach((v,j)=>{const k=+t.dataset.i+j,inp=all[k];if(inp){inp.value=v;arr[k]=v}});
+  if(t.dataset.k==="c")renderPlan();else nameHint();
+});
+document.addEventListener("keydown",e=>{
+  if(e.key!=="Enter"||!e.target.matches||!e.target.matches("#nf input"))return;
+  e.preventDefault();const ins=[...document.querySelectorAll("#nf input")];const nx=ins[ins.indexOf(e.target)+1];
+  if(nx)nx.focus();else{const b=document.querySelector("#app .actions button");if(b)b.focus()}
+});
+const dupOf=a=>{const seen=new Set();for(const x of a){const k=x.toLowerCase();if(seen.has(k))return x;seen.add(k)}return null};
+
+function nameHint(){
+  const n=+$("#n").value||MINN,g=typed(n),d=dupOf(g),el=document.getElementById("nh");if(!el)return;
+  el.className="hint"+(d?" err":"");
+  el.textContent=d?"„"+d+"“ kommt doppelt vor. Bitte eindeutige Namen verwenden.":g.length?g.length+" von "+n+" Namen eingegeben.":"";
+}
+
+function limChange(){const on=$("#lim").value==="yes";$("#dur").value=on?"20":"40";$("#draw").value=on?"yes":"no";syncSetup()}
+/* Schätzung für „Platzierung abwarten“: Das Turnier wird mit der echten Ansetzungslogik mehrfach mit zufälligen Ergebnissen durchgespielt
+   (alle Spiele gleich lang, kleine Schwankung). Ergebnis ist der Median der Zeitblöcke. Wird gemerkt, damit die Tabelle schnell bleibt. */
+const waitCache={};
+function waitBlocks(n,R,c,draw,wait=true,lead=0){
+  const ck=[n,R,c,draw?1:0,wait?1:0,wait?0:lead].join();
+  if(ck in waitCache)return waitCache[ck];
+  const keep=S,res=[],ends=[],G=totalGames(n,R);
+  const score=()=>{
+    if(Math.random()<.5){return[[6,0],[6,5],[0,6],[5,6]][Math.floor(Math.random()*4)]}
+    let a=Math.floor(Math.random()*8),b=Math.floor(Math.random()*8);
+    if(a===b&&!draw)b=(b+1+Math.floor(Math.random()*7))%8;
+    return[a,b];
+  };
+  simFast=true;
+  const rnd0=Math.random;let seed=[...ck].reduce((h,ch)=>(h*31+ch.charCodeAt(0))>>>0,7);
+  Math.random=()=>{seed=(seed+0x6D2B79F5)>>>0;let t=seed;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296};  /* feste Zufallsfolge: gleiche Eingaben, gleiche Empfehlung */
+  try{
+    for(let q=0;q<(G<=60?60:G<=100?30:G<=200?12:6);q++){
+      S={n,R,names:Array(n).fill(""),lim:true,courts:c,dur:20,brk:5,draw,ov:true,wait,lead:wait?0:lead,games:[],rk:Array.from({length:n},Math.random)};
+      const end=new Map();let t=0,guard=0;
+      const add=()=>{const b=S.games.length;rollAdd();for(let i=b;i<S.games.length;i++)end.set(S.games[i],t+1+(Math.random()-.5)*.2)};
+      add();
+      while(guard++<4000){
+        const live=S.games.filter(m=>!m.fin&&!done(m));
+        if(!live.length){if(S.games.length>=G)break;add();if(!S.games.some(m=>!m.fin&&!done(m)))break;continue}
+        const m=live.reduce((x,y)=>end.get(x)<=end.get(y)?x:y);
+        t=end.get(m);[m.sa,m.sb]=score();add();
+      }
+      if(S.games.length>=G){
+        res.push(Math.max(...S.games.map(m=>end.get(m))));
+        /* Wann ist jeder Platz zuletzt belegt? Die Plätze werden nach Länge sortiert, denn welcher Platz länger läuft, ist beliebig. */
+        const le=Array(c).fill(0);S.games.forEach(m=>{le[m.c]=Math.max(le[m.c],Math.round(end.get(m)))});
+        ends.push(le.sort((x,y)=>y-x));
+      }
+    }
+  }finally{S=keep;simFast=false;Math.random=rnd0}
+  res.sort((x,y)=>x-y);
+  const v=res.length?{t:res[Math.floor(res.length/2)],runs:ends,ends:Array.from({length:c},(_,k)=>{const a=ends.map(e=>e[k]).sort((x,y)=>x-y);return a[Math.min(a.length-1,Math.floor(WQ*a.length))]})}:null;
+  waitCache[ck]=v;return v;
+}
+const WQ=.8;
+/* Bei „sofort weiter“ gibt es keine Wartezeit zu simulieren: Reserve in Zeitblöcken (knapp 0, normal 1, sicher 2). Bei „abwarten“ entscheidet der Anteil simulierter Turniere. */
+const RESB={50:0,75:1,95:2};
+function bookFor(runs,c,wt,sec,dur,brk){
+  const e=wt?0:(RESB[sec]==null?1:RESB[sec]),b=bookWait(runs.map(r=>r.map(x=>x+e)),c,wt?sec/100:1,dur,brk);
+  return{need:b.need,cov:wt?b.cov:null,res:e};
+}
+function waitTotal(){
+  const lo=plan(S.n,S.R,S.courts,S.dur,S.brk,true).waves,v=waitBlocks(S.n,S.R,S.courts,!!S.draw),w=v?Math.max(lo,Math.round(v.t)):plan(S.n,S.R,S.courts,S.dur,S.brk,false).waves;
+  return w*S.dur+(w-1)*S.brk;
+}
+/* Buchung aus den simulierten Turnieren: Je Platz (nach Länge sortiert) die kleinste Buchung, sodass der Anteil q aller Läufe komplett abgedeckt ist */
+function bookWait(runs,c,q,dur,brk){
+  const step=dur+brk,needOf=e=>Math.max(60,Math.ceil(((e-1)*step+dur+wu())/30)*30),Rn=runs.map(e=>e.map(needOf));
+  for(let p=Math.max(.01,q-.2);p<=1.0001;p+=.01){
+    const need=Array.from({length:c},(_,k)=>{const a=Rn.map(r=>r[k]).sort((x,y)=>x-y);return a[Math.min(a.length-1,Math.max(0,Math.ceil(p*a.length)-1))]});
+    const cov=Rn.filter(r=>r.every((x,k)=>x<=need[k])).length/Rn.length;
+    if(cov>=q-1e-9)return{need,cov};
+  }
+  const need=Array.from({length:c},(_,k)=>Math.max(...Rn.map(r=>r[k])));
+  return{need,cov:1};
+}
+let waitJob=0;
+function fillWait(n,R,dur,brk,draw,mx){
+  const job=++waitJob;let k=1;
+  const next=()=>{
+    if(job!==waitJob||k>mx)return;
+    const cell=document.getElementById("wt"+k);if(!cell)return;
+    const bv=waitBlocks(n,R,k,draw),b=bv&&bv.t,lo=plan(n,R,k,dur,brk,true).waves,hi=plan(n,R,k,dur,brk,false).waves;
+    const wbc=document.getElementById("wb"+k);
+    const md=$("#ov").value;
+    if(wbc&&(md==="wait"||md==="yes")){const bw=md==="wait"?bv:waitBlocks(n,R,k,draw,false,+($("#lead")||{}).value||0);wbc.textContent=bw?"Buchung: "+groups(bookFor(bw.runs,k,md==="wait",+$("#sec").value||75,dur,brk).need).map(g=>`${courtLbl(g)}: ${fmt(g.T)}`).join(" · "):"Buchung: –"}
+    if(b==null)cell.textContent="–";
+    else{const w=Math.max(lo,Math.round(b)),t=x=>x*dur+(x-1)*brk;
+      cell.textContent=fc(t(w))}
+    k++;setTimeout(next,0);
+  };
+  setTimeout(next,0);
+}
+const fc=t=>{const h=Math.floor(t/60),m=t%60;return h+":"+String(m).padStart(2,"0")+" h"};
+function syncSetup(){
+  const n=+$("#n").value,sel=$("#r"),cur=validR(n,+sel.value||4);
+  sel.innerHTML=roundOpts(n).map(r=>`<option value="${r}"${r===cur?" selected":""}>${r} Runden</option>`).join("");
+  const mx=Math.floor(n/2),cs=$("#c"),cc=Math.min(mx,+cs.value||2);
+  cs.innerHTML=[...Array(mx).keys()].map(k=>`<option value="${k+1}"${k+1===cc?" selected":""}>${k+1} ${k?"Plätze":"Platz"}</option>`).join("");
+  const lim=$("#lim").value==="yes",dr=$("#draw"),dur=+$("#dur").value,brk=+$("#brk").value;
+  $("#durl").textContent=lim?"Spielzeit pro Spiel":"Geschätzte Dauer pro Spiel";
+  dr.disabled=!lim;if(!lim)dr.value="no";
+  const R=+sel.value,c=+cs.value,mode=$("#ov").value,ov=mode!=="no",wt=mode==="wait",P=plan(n,R,c,dur,brk,ov&&!wt),sim=Math.min(c,mx)*2,A=plan(n,R,c,dur,brk,!ov||wt);
+  $("#leadf").hidden=mode!=="yes";$("#secf").hidden=!ov;
+  const drawOn=$("#draw").value==="yes"&&lim,leadV=+($("#lead")||{}).value||0,WV=ov?waitBlocks(n,R,c,drawOn,wt,leadV):null;
+  let BK=null;
+  if(ov&&WV){const sc=+$("#sec").value||75,b=bookFor(WV.runs,c,wt,sc,dur,brk),tw=Math.max(plan(n,R,c,dur,brk,true).waves,Math.round(WV.t));BK={need:b.need,cov:b.cov,res:b.res,tot:tw*dur+(tw-1)*brk,tw,runs:WV.runs.length}}
+  const lines=[`Jeder spielt ${R}-mal, insgesamt ${totalGames(n,R)} Spiele.`,
+    BK?`Gesamtdauer ca. ${fmt(BK.tot)}: ${BK.tw} Zeitblöcke zu ${dur} min${brk&&BK.tw>1?`, dazwischen je ${brk} min Wechsel und Pause`:""}. Schätzung aus ${BK.runs} simulierten Turnieren.`:
+    `Gesamtdauer ${wt?"bis ":""}ca. ${fmt(P.total)}: ${P.waves} Zeitblöcke zu ${dur} min${brk&&P.waves>1?`, dazwischen je ${brk} min Wechsel und Pause`:""}.`,
+    `Gleichzeitig spielen ${sim} Spieler${n>sim?`, ${n-sim} pausieren oder warten`:""}.`];
+  if(n%2)lines.push(ov&&!wt?"Bei ungerader Spielerzahl sind nur gerade Rundenzahlen möglich, damit alle gleich oft spielen.":"Bei ungerader Spielerzahl sind nur gerade Rundenzahlen möglich. Die Zusatzspiele der Pausierenden sind eingerechnet.");
+  if(ov&&!wt){
+    lines.push(BK?"Spiele werden angesetzt, sobald ein Platz frei ist.":"Spiele werden angesetzt, sobald ein Platz frei ist. Die Dauer ist die Prognose im besten Fall und kann sich um ein bis zwei Zeitblöcke verlängern.");
+    lines.push(`Hinweis: Die Paarungen entstehen, ohne dass der Stand der noch laufenden Spiele feststeht. Sie passen dadurch ${c*4>n?"deutlich":"etwas"} weniger gut zur Tabelle als bei Runde für Runde. Mit „Ja, Platzierung abwarten“ bleibt die Paarung wie im Schweizer System, dafür kann es Wartezeit geben.`);
+  }
+  if(wt){
+    lines.push("Ein Spiel wird erst angesetzt, wenn die Platzierung der beiden Spieler feststeht und sich durch laufende Spiele nicht mehr ändern kann. Die Paarungen entsprechen dann dem Schweizer System, Plätze bleiben dafür manchmal kurz frei.");
+    if(!BK)lines.push(`Die Dauer liegt zwischen ca. ${fmt(A.total)} (ohne Wartezeit) und ca. ${fmt(P.total)} (wie Runde für Runde).`);
+  }
+  if(BK)lines.push((BK.cov!=null?`Die Buchung unten reicht in ca. ${Math.round(BK.cov*100)} % der simulierten Turniere.`:`Die Buchung unten enthält ${BK.res?BK.res+(BK.res>1?" Zeitblöcke":" Zeitblock")+" Reserve":"keine Reserve"} für Verzögerungen.`)+` Dauert es länger, müsste ein Platz verlängert werden. Die Plätze unterscheiden sich in der Dauer, weil nicht auf allen Plätzen gleich viele Spiele stattfinden.`);
+  if(!ov&&A.waves<P.waves)lines.push(`Mit überlappenden Runden wären es nur ${A.waves} Zeitblöcke, ca. ${fmt(A.total)}, mit etwas schlechteren Paarungen.`);
+  if(ov&&!wt&&A.waves>P.waves)lines.push(`Ohne Überlappung wären es ${A.waves} Zeitblöcke, ca. ${fmt(A.total)}.`);
+  if(!lim)lines.push("Ohne Zeitlimit wird bis zum Ergebnis gespielt, Unentschieden gibt es nicht. Die Dauer ist eine Schätzung.");
+  if(R>n-1)lines.push("Bei mehr Runden als Gegnern lassen sich Wiederholungsspiele nicht vermeiden.");
+  const t0=T0(),w0=wu();
+  if(w0)lines.push(`Aufwärmen: ${w0} min, in der Buchung eingerechnet.${t0!=null?` Das erste Spiel beginnt um ${hhmm(t0+w0)}.`:""}`);
+  const bk=groups(BK?BK.need:P.need).map(g=>`<tr><td class="nm">${courtLbl(g)}</td><td>${fmt(g.T)}${t0!=null?`<span class="sub">${hhmm(t0)} bis ${hhmm(t0+g.T)}</span>`:""}</td><td>${split(g.T).join(" + ")} min</td></tr>`).join("");
+  $("#sum").innerHTML=lines.map((t,i)=>`<p class="${i?"hint":"sum"}">${t}</p>`).join("")+`<div class="wrap bkt"><table><thead><tr><th class="nm">Buchung</th><th>Dauer</th><th>Aufteilung</th></tr></thead><tbody>${bk}</tbody></table></div><p class="hint">Plätze lassen sich zu 60, 90 oder 120 min buchen. Gerechnet wird bis zum Ende des letzten Spiels auf dem jeweiligen Platz, aufgerundet auf 30 min.</p>`;
+  const cols=[["no","Runde für Runde"],["yes","Sofort weiter"],["wait","Abwarten (ca.)"]];
+  const rows=[...Array(mx).keys()].map(k=>{
+    const q0=plan(n,R,k+1,dur,brk,false),q1=plan(n,R,k+1,dur,brk,true),qs=mode==="yes"?q1:q0,cl=k+1===c?"sel":"";
+    const cell=(m,txt,id)=>`<td class="${m===mode?"cm":""}"${id?` id="${id}"`:""}>${txt}</td>`;
+    return`<tr class="${cl} cmp1"><td class="l">${k+1} ${k?"Plätze":"Platz"}</td>${cell("no",fc(q0.total))}${cell("yes",fc(q1.total))}${cell("wait","…","wt"+(k+1))}</tr><tr class="${cl} cmp2"><td colspan="4" id="wb${k+1}">Buchung: ${mode==="wait"||mode==="yes"?"…":groups(qs.need).map(g=>`${courtLbl(g)}: ${fmt(g.T)}`).join(" · ")}</td></tr>`}).join("");
+  $("#ptab").innerHTML=`<div class="wrap"><table class="cmpt"><thead><tr><th class="l">Plätze</th>${cols.map(x=>`<th class="${x[0]===mode?"cm":""}">${x[1]}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table></div><p class="legend">Gesamtdauer je Platzzahl bei den drei Optionen für „Runden überlappen“. „Sofort weiter“ ist der beste Fall, „Abwarten“ eine Schätzung aus simulierten Turnieren mit gemischten Ergebnissen. Wenn Unentschieden erlaubt sind und viele Spiele unentschieden enden, bleibt die Platzierung länger offen und es dauert bis zu so lang wie Runde für Runde (obere Angabe). Unter jeder Zeile steht die Buchung je Platz für die gewählte Option, aufgerundet auf 30 min.</p>`;
+  fillWait(n,R,dur,brk,$("#draw").value==="yes"&&lim,mx);
+  $("#pleg").textContent=ov?(wt?"Zeitplan im günstigsten Fall, ohne Wartezeit. Tatsächlich kann es länger dauern, wenn Plätze auf feste Platzierungen warten. ":"")+"Zeiten sind Richtwerte ab Turnierstart, inklusive Wechselzeit. Die Paarungen ergeben sich während des Turniers, sobald Plätze frei werden. Die Farbleiste zeigt die Runde.":"Zeiten ab Turnierstart, inklusive Wechselzeit. Ab Runde 2 ergeben sich die Paarungen aus der Tabelle. Die Farbleiste zeigt die Runde.";
+  renderPlan();
+  nameFields();
+}
+
+function start(){
+  const n=Math.min(MAXN,Math.max(MINN,+$("#n").value||MINN)),R=validR(n,+$("#r").value);
+  if(dupOf(typed(n))){const dn=dupOf(typed(n)).toLowerCase(),f=[...document.querySelectorAll('#nf input[data-k="p"]')].find(x=>x.value.trim().toLowerCase()===dn);const d=document.querySelector("details.names");if(d)d.open=true;nameHint();if(f)f.focus();return}
+  const lim=$("#lim").value==="yes";
+  S={n,R,names:fullNames(n),lim,courts:Math.min(Math.floor(n/2),+$("#c").value||1),dur:+$("#dur").value,brk:+$("#brk").value,draw:lim&&$("#draw").value==="yes"};
+  const cn=clean(CNM).slice(0,S.courts);if(cn.some(Boolean))S.cn=cn;
+  S.wu=+$("#wu").value||0;const t0=tparse($("#t0").value);if(t0!=null)S.t0=t0;
+  NM=[];CNM=[];
+  if($("#ov").value!=="no"){S.ov=true;if($("#ov").value==="yes")S.lead=+$("#lead").value||0;S.wait=$("#ov").value==="wait";S.games=[];S.rk=Array.from({length:n},Math.random);justDone.clear();rollAdd()}
+  else{S.rounds=[];S.rounds.push(makeRound(true))}
+  save();render();
+}
+
+/* Turnierablauf */
+function nextRound(){
+  const rd=S.rounds[S.rounds.length-1];
+  if(rd.m.concat(rd.x?[rd.x]:[]).some(m=>!done(m)))return;
+  undoArmed=false;
+  if(S.rounds.length>=S.R){const x=extraRound();if(!x)return;S.rounds.push(x)}else S.rounds.push(makeRound(false));
+  save();render();
+}
+function undoRound(){
+  if(S.rounds.length<2)return;
+  const rd=S.rounds[S.rounds.length-1],dirty=rd.m.concat(rd.x?[rd.x]:[]).some(m=>m.sa!=null||m.sb!=null);
+  if(dirty&&!undoArmed){undoArmed=true;renderActions();setTimeout(()=>{undoArmed=false;if(S)renderActions()},3500);return}
+  undoArmed=false;S.rounds.pop();save();render();
+}
+function reset(){
+  if(!resetArmed){resetArmed=true;renderTop();setTimeout(()=>{resetArmed=false;renderTop()},3500);return}
+  resetArmed=false;undoArmed=false;S=null;try{localStorage.removeItem(KEY)}catch(e){}
+  pushLive();render();
+}
+function setScore(ri,mi,side,v){
+  const m=mi<0?S.rounds[ri].x:S.rounds[ri].m[mi];
+  m["s"+side]=v===""?null:Math.min(99,Math.max(0,parseInt(v,10)));
+  save();renderTable();renderActions();markRow(ri,mi);renderPlan();
+}
+function markRow(ri,mi){
+  const m=mi<0?S.rounds[ri].x:S.rounds[ri].m[mi],row=document.getElementById("m"+ri+"_"+mi);
+  if(!row)return;
+  const d=done(m);
+  row.querySelector(".a").classList.toggle("win",d&&m.sa>m.sb);
+  row.querySelector(".b").classList.toggle("win",d&&m.sb>m.sa);
+}
+document.addEventListener("keydown",e=>{
+  if(e.key!=="Enter"||!e.target.matches||!e.target.matches(".m input"))return;
+  e.preventDefault();
+  const ins=[...document.querySelectorAll(".m input")],nx=ins[ins.indexOf(e.target)+1]||document.querySelector("#act button:not(:disabled)");
+  if(nx)nx.focus();
+});
+
+/* Anzeige */
+function renderTop(){
+  $("#topbtns").innerHTML=VIEW?"":S?`<button class="${resetArmed?"danger":"quiet"}" onclick="reset()">${resetArmed?"Wirklich zurücksetzen?":"Zurücksetzen"}</button>`:"";
+}
+
+function render(){render0();if(VIEW)lockView();renderLiveBar()}
+function render0(){
+  renderTop();
+  $("#tl").textContent=S&&S.courts?`Einzel im Schweizer System. ${S.courts} ${S.courts===1?"Platz":"Plätze"}, ${S.lim?S.dur+" min Zeitlimit":"ohne Zeitlimit"}, geplant ca. ${fmt(S.wait?waitTotal():plan(S.n,S.R,S.courts,S.dur,S.brk,S.ov).total)}${S.ov?(S.wait?", Runden überlappend, mit Warten auf feste Platzierung":", Runden überlappend"):""}.`:"Einzel im Schweizer System";
+  if(!S){
+    const nOpts=[...Array(MAXN-MINN+1).keys()].map(k=>`<option value="${MINN+k}"${MINN+k===9?" selected":""}>${MINN+k} Spieler</option>`).join("");
+    $("#app").innerHTML=`<section class="panel"><h2>Turnier einrichten</h2>
+      <div class="grid">
+        <div class="field"><label for="n">Spieler</label><select id="n" onchange="syncSetup()">${nOpts}</select></div>
+        <div class="field"><label for="r">Runden</label><select id="r" onchange="syncSetup()"></select></div>
+        <div class="field"><label for="c">Plätze</label><select id="c" onchange="syncSetup()"></select></div>
+        <div class="field"><label for="ov">Runden überlappen</label><select id="ov" onchange="syncSetup()"><option value="no">Nein, Runde für Runde</option><option value="yes">Ja, sofort weiter</option><option value="wait">Ja, Platzierung abwarten</option></select></div>
+        <div class="field" id="secf" hidden><label for="sec">Buchungssicherheit</label><select id="sec" onchange="syncSetup()"><option value="50">Knapp: reicht meist</option><option value="75" selected>Normal: reicht fast immer</option><option value="95">Sicher: mit Reserve</option></select></div>
+        <div class="field" id="leadf" hidden><label for="lead">Vorsprung begrenzen</label><select id="lead" onchange="syncSetup()"><option value="0">Keine Grenze</option><option value="1">Höchstens 1 Spiel Vorsprung</option><option value="2">Höchstens 2 Spiele Vorsprung</option></select><p class="hint">Begrenzt, wie viele Spiele ein Spieler mehr haben darf als der Spieler mit den wenigsten. Strenger heißt gleichmäßiger, aber mehr Leerlauf und eher Wiederholungsspiele.</p></div>
+        <div class="field"><label for="lim">Zeitlimit pro Spiel</label><select id="lim" onchange="limChange()"><option value="yes">Ja</option><option value="no">Nein</option></select></div>
+        <div class="field"><label for="dur" id="durl">Spielzeit pro Spiel</label><select id="dur" onchange="syncSetup()">${DURS.map(d=>`<option value="${d}"${d===20?" selected":""}>${d} min</option>`).join("")}</select></div>
+        <div class="field"><label for="wu">Aufwärmen vor dem ersten Spiel</label><select id="wu" onchange="syncSetup()">${[0,5,10,15,20,30].map(b=>`<option value="${b}"${b===0?" selected":""}>${b?b+" min":"Kein Aufwärmen"}</option>`).join("")}</select></div>
+        <div class="field"><label for="t0">Startzeit (optional)</label><input id="t0" type="time" onchange="syncSetup()"></div>
+        <div class="field"><label for="brk">Wechsel- und Pausenzeit</label><select id="brk" onchange="syncSetup()">${BRKS.map(b=>`<option value="${b}"${b===5?" selected":""}>${b} min</option>`).join("")}</select></div>
+        <div class="field"><label for="draw">Unentschieden</label><select id="draw" onchange="syncSetup()"><option value="yes">Erlaubt, Stand nach Zeitablauf</option><option value="no">Nicht erlaubt</option></select></div>
+      </div>
+      <div id="sum" aria-live="polite"></div>
+      <details class="cmp"><summary>Dauer nach Platzzahl vergleichen</summary><div id="ptab"></div></details>
+      <details class="names"><summary>Namen für Spieler und Plätze (optional)</summary><div id="nf"></div></details>
+      <div class="actions"><button onclick="start()">Turnier starten</button></div>
+      <details class="rules"><summary>Spielregeln</summary><ul>
+        <li>Wertung: Sieg 3 Punkte, Unentschieden 1 Punkt (nur wenn erlaubt), Niederlage 0. Das Ergebnis wird in Games eingetragen, bei Zeitlimit zählt der Stand nach Ablauf.</li>
+        <li>Platzierung: Punkte, dann Direktvergleich, Game-Differenz, Buchholz (Punkte der Gegner), Siege, erzielte Games. Sind 2 bis 4 Spieler bei den Plätzen 1 bis 3 punktgleich, spielen sie am Ende Entscheidungsspiele jeder gegen jeden.</li>
+        <li>Paarung: Runde 1 wird ausgelost. Ab Runde 2 wird nach Tabelle gepaart, bevorzugt Spieler mit benachbarten Plätzen (1. gegen 2., 3. gegen 4. usw.), und ohne Wiederholungen, solange das möglich ist. Dafür zählen Punkte, Game-Differenz, Siege und erzielte Games.</li>
+        <li>Bei ungerader Spielerzahl pausiert pro Runde möglichst, wer bisher am seltensten pausiert hat, davon der Tabellenletzte. Bei Gleichstand und in Runde 1 entscheidet das Los.</li>
+        <li>Nach jeder zweiten Runde spielen die beiden Pausierenden ein Zusatzspiel, damit am Ende alle gleich viele Spiele haben.</li>
+        <li>Scheidet ein Spieler aus, zählen seine bisherigen Spiele für die Gegner weiter. Wer dadurch ein Spiel verliert, bekommt ein Ausgleichsspiel. Fehlt am Ende noch jemandem ein Spiel, spielt er ein Zusatzspiel gegen einen tabellenähnlichen Gegner. Es zählt nur für ihn, nicht für den Gegner.</li>
+        <li>Ohne Überlappung: Spiele laufen gleichzeitig, soweit Plätze frei sind. Eine neue Runde beginnt erst, wenn alle Ergebnisse vorliegen. Ein Zusatzspiel startet nach dem regulären Spiel des Spielers, der in der Vorrunde pausiert hat.</li>
+        <li>Mit Überlappung: Ein Spiel beginnt, sobald ein Platz frei ist und die Spieler bereit sind, auch wenn die Vorrunde noch läuft. Gepaart werden bevorzugt Spieler mit gleich vielen bisherigen Spielen, nach Tabelle. Bei „Ja, sofort weiter“ kennt die Paarung nicht den Stand der laufenden Spiele, Wiederholungsspiele lassen sich seltener vermeiden. Bei „Ja, Platzierung abwarten“ wird ein Spiel erst angesetzt, wenn laufende Spiele die Platzierung der beiden Spieler nicht mehr verändern können. Ein Platz bleibt dafür manchmal kurz frei, Wiederholungsspiele werden dabei möglichst vermieden. Die Vorsprung-Grenze (nur „sofort weiter“) hält die Spielzahlen enger beieinander.</li>
+      </ul></details>
+      <details class="rules"><summary>Handhabung</summary><ul>
+        <li>Einrichten: Spieler, Runden, Plätze und Modus wählen. Namen für Spieler und Plätze sind optional, leere Felder heißen A, B, C … bzw. Platz 1, Platz 2 … Eine Liste mit Komma oder Zeilenumbruch lässt sich in ein Feld einfügen. Mit Startzeit (Beginn der Platzbuchung) und Aufwärmen zeigt der Spielplan Uhrzeiten, das Aufwärmen liegt am Anfang der Buchung.</li>
+        <li>Buchung: Unter den Einstellungen steht, wie lange jeder Platz gebucht werden sollte. Bei überlappenden Runden wird das aus simulierten Turnieren berechnet. „Buchungssicherheit“ legt fest, wie oft die Buchung reichen soll (Abwarten: Knapp ca. 50 %, Normal ca. 75 %, Sicher ca. 95 % der simulierten Turniere. Sofort weiter: Knapp ohne, Normal mit einem, Sicher mit zwei Zeitblöcken Reserve). Der Vergleich nach Platzzahl zeigt dieselbe Rechnung für andere Platzzahlen.</li>
+        <li>Spielen: „Turnier starten“ lost Runde 1 aus. Ergebnisse in Games eintragen. Bei Runde für Runde erscheint die nächste Runde mit „Runde n erstellen“, sobald alle Ergebnisse vorliegen. Bei überlappenden Runden setzt „Spiel ansetzen“ die nächsten Spiele an, sobald ein Platz frei ist.</li>
+        <li>Korrigieren: Das Ergebnis der jüngsten Spiele lässt sich ändern. Mit „Zurück zu Runde“ bzw. „Letzte Ansetzung zurücknehmen“ wird die letzte Ansetzung verworfen. Ältere Spiele sind gesperrt.</li>
+        <li>Ausscheiden: Unter „Spieler scheidet aus“ den Spieler wählen und bestätigen. Offene Spiele mit ihm entfallen, Ausgleichs- und Zusatzspiele werden automatisch angesetzt.</li>
+        <li>Zeiten anpassen: Über dem Spielplan lassen sich Startzeit und Aufwärmen ändern. Mit „+5 min“ oder „+10 min“ verschieben sich alle Zeiten ab der aktuellen Zeile, wenn sich ein Slot verschiebt. „Zurücksetzen“ stellt den Plan wieder her.</li>
+        <li>Tabelle kopieren: Der Button unter der Tabelle kopiert den Stand als Text, zum Beispiel für einen Messenger.</li>
+        <li>Speichern: Der Stand bleibt im Browser erhalten, auch nach dem Neuladen. „Zurücksetzen“ oben verwirft das Turnier nach Bestätigung.</li>
+      </ul></details></section>
+    <section class="section"><h2>Spielplan</h2><p class="hint">Vorschau, wie sich die Spiele auf Plätze und Zeitblöcke verteilen. Die Namen erscheinen nach dem Start.</p><div class="wrap" id="plan"></div><p class="legend" id="pleg"></p></section>`;
+    syncSetup();
+    return;
+  }
+  if(S.ov){
+    $("#app").innerHTML=`<div id="champ" aria-live="polite"></div><div id="so"></div>
+    <section class="panel"><div class="head"><h2 id="rh"></h2><span class="meta" id="prog"></span></div><div class="cur" id="cur"></div><div class="actions" id="act"></div></section>
+    <section class="section"><h2>Tabelle</h2><div class="wrap" id="tab"></div><p class="legend" id="leg"></p><div class="actions"><button class="quiet" onclick="copyTable()">Tabelle kopieren</button><span class="status" id="cpst" role="status"></span></div><textarea id="cpbox" class="cpbox" readonly hidden aria-label="Tabelle als Text"></textarea></section>
+    <section class="section"><h2>Spielplan</h2><div id="tctl"></div><div class="wrap" id="plan"></div><p class="legend">Zeiten sind Richtwerte ab Turnierstart, inklusive Wechselzeit. Gestrichelte Felder sind noch nicht angesetzt, hervorgehobene Felder laufen gerade. Die Farbleiste zeigt die Runde. Runden können sich überlappen, weil ein Spiel startet, sobald Platz und Spieler frei sind.</p></section>
+    <section class="section" id="outc"></section>
+    <section class="section" id="histc" hidden><h2>Bisherige Runden</h2><p class="hint">Abgeschlossene Runden sind gesperrt. Zum Korrigieren mit „Zurück zu Runde“ zurückgehen.</p><div class="hist" id="hist"></div></section>`;
+    renderRoll();return;
+  }
+  $("#app").innerHTML=`<div id="champ" aria-live="polite"></div><div id="so"></div>
+    <section class="panel"><div class="head"><h2 id="rh"></h2><span class="meta" id="prog"></span></div><div class="cur" id="cur"></div><div class="actions" id="act"></div></section>
+    <section class="section"><h2>Tabelle</h2><div class="wrap" id="tab"></div><p class="legend" id="leg"></p><div class="actions"><button class="quiet" onclick="copyTable()">Tabelle kopieren</button><span class="status" id="cpst" role="status"></span></div><textarea id="cpbox" class="cpbox" readonly hidden aria-label="Tabelle als Text"></textarea></section>
+    <section class="section"><h2>Spielplan</h2><div id="tctl"></div><div class="wrap" id="plan"></div><p class="legend">Zeiten ab Turnierstart, inklusive Wechselzeit. Gestrichelte Felder sind noch nicht ausgelost. Das hervorgehobene Feld gehört zur aktuellen Runde. Die Farbleiste zeigt die Runde.</p></section>
+    <section class="section" id="outc"></section>
+    <section class="section" id="histc" hidden><h2>Bisherige Runden</h2><div class="hist" id="hist"></div></section>`;
+  renderCur();renderTable();renderActions();renderHist();renderPlan();
+}
+
+function renderCur(){
+  const ri=S.rounds.length-1,rd=S.rounds[ri];
+  const row=(m,mi)=>`<div class="mw rc${ri%6}"><span class="tag">${rd.fin?"Zusatzspiel":"Runde "+(ri+1)+", "+(mi<0?"Zusatzspiel":m.eq?"Ausgleichsspiel":"Spiel "+(mi+1))}</span><div class="m" id="m${ri}_${mi}">
+      <div class="a ${done(m)&&m.sa>m.sb?"win":""}">${esc(S.names[m.a])}</div>
+      <input type="number" min="0" max="99" inputmode="numeric" enterkeyhint="next" aria-label="Games ${esc(S.names[m.a])}" value="${m.sa??""}" oninput="setScore(${ri},${mi},'a',this.value)">
+      <div class="sep">:</div>
+      <input type="number" min="0" max="99" inputmode="numeric" enterkeyhint="next" aria-label="Games ${esc(S.names[m.b])}" value="${m.sb??""}" oninput="setScore(${ri},${mi},'b',this.value)">
+      <div class="b ${done(m)&&m.sb>m.sa?"win":""}">${esc(S.names[m.b])}</div>
+    </div>${m.h?`<p class="note">Zählt nur für ${esc(S.names[m.a])}, nicht für ${esc(S.names[m.b])}.</p>`:""}</div>`;
+  $("#rh").textContent=rd.fin?"Zusatzspiele":`Runde ${ri+1} von ${S.R}`;
+  $("#cur").innerHTML=`<p class="hint">Ergebnis in Games eintragen, z. B. 6 : 4.${S.draw?"":" Unentschieden sind nicht erlaubt."}</p>
+    <div class="matches">${rd.m.map(row).join("")}</div>`+
+    (rd.bye!=null?`<p class="note">Pausiert: <b>${esc(S.names[rd.bye])}</b></p>`:"")+
+    (rd.free&&rd.free.length?`<p class="note">Ohne Gegner (Gegner ausgeschieden): <b>${rd.free.map(i=>esc(S.names[i])).join(", ")}</b></p>`:"")+
+    (rd.x?`<div class="extra"><h3>Zusatzspiel</h3><p class="hint">Die Pausierenden aus Runde ${ri} und ${ri+1} gleichen ihre Spiele aus.</p><div class="matches">${row(rd.x,-1)}</div></div>`:"");
+}
+
+/* Tabelle als Text kopieren, z. B. für die Gruppe. Klappt die Zwischenablage nicht, wird der Text zum Markieren angezeigt. */
+function tableText(){
+  const st=ranking(),G=S.games?S.games.length+rollLeft()+helpLeft():(S.out&&S.out.length?null:totalGames(S.n,S.R)),fin=allM().filter(done).length;
+  return`Padel-Turnier, Stand nach ${fin}${G==null?" Spielen":" von "+G+" Spielen"}\n`+st.map(s=>{return`${s.rk}. ${s.nm}${s.out?" (ausgeschieden)":""}: ${s.p} Pkt, ${s.gf}:${s.ga} Games (${sgn(s.gf-s.ga)})`}).join("\n");
+}
+async function copyTable(){
+  const t=tableText(),st=$("#cpst"),box=$("#cpbox");
+  let ok=false;
+  try{await navigator.clipboard.writeText(t);ok=true}catch(e){}
+  if(!ok){try{box.hidden=false;box.value=t;box.select();ok=document.execCommand("copy")}catch(e){}}
+  if(ok){box.hidden=true;st.textContent="Kopiert."}
+  else{box.hidden=false;box.value=t;box.focus();box.select();st.textContent="Zum Kopieren markiert, bitte selbst kopieren."}
+  setTimeout(()=>{if(st.textContent==="Kopiert.")st.textContent=""},2500);
+}
+function renderTable(){
+  const st=ranking(),top=st.filter(s=>s.rk===1),dr=S.draw;
+  const th=(t,ttl)=>`<th title="${ttl}">${t}</th>`;
+  $("#tab").innerHTML=`<table><thead><tr><th>Platz</th><th class="nm">Spieler</th>${th("Sp","Spiele")}${th("S","Siege")}${dr?th("U","Unentschieden"):""}${th("N","Niederlagen")}${th("Games","Games erzielt : kassiert")}${th("Diff","Game-Differenz")}${th("Bh","Buchholz: Summe der Punkte aller bisherigen Gegner")}${th("Pkt","Punkte")}</tr></thead><tbody>`+
+    st.map(s=>{const rk=s.rk,lead=rk===1&&top.length<st.length&&s.g>0;
+      return`<tr class="${lead?"lead":""}"><td class="rk">${rk}</td><td class="nm">${esc(s.nm)}${s.out?" <span class=\"gone\">ausgeschieden</span>":""}</td><td>${s.g}</td><td>${s.w}</td>${dr?`<td>${s.d}</td>`:""}<td>${s.l}</td><td>${s.gf}:${s.ga}</td><td>${sgn(s.gf-s.ga)}</td><td>${s.bh}</td><td class="pt">${s.p}</td></tr>`}).join("")+`</tbody></table>`;
+  $("#leg").textContent=`Sp Spiele, S Siege, ${dr?"U Unentschieden, ":""}N Niederlagen, Games erzielte : kassierte Games, Diff Game-Differenz, Bh Buchholz (Punkte der Gegner), Pkt Punkte. Bei Punktgleichheit entscheiden Direktvergleich, Game-Differenz, Buchholz, Siege und erzielte Games.`;
+}
+
+function renderActions(){
+  const ri=S.rounds.length-1,rd=S.rounds[ri],all=rd.m.concat(rd.x?[rd.x]:[]);
+  const open=all.filter(m=>!done(m)).length,last=S.rounds.length>=S.R;
+  $("#prog").textContent=`${all.length-open} von ${all.length} Ergebnissen eingetragen`;
+  let h="";
+  const xr=last&&!open?extraRound():null;
+  if(!last)h+=`<button onclick="nextRound()"${open?" disabled":""}>Runde ${ri+2} erstellen</button>`;
+  else if(xr)h+=`<button onclick="nextRound()">Zusatzspiele ansetzen</button>`;
+  if(ri>0)h+=`<button class="${undoArmed?"danger":"quiet"}" onclick="undoRound()" title="Verwirft Runde ${ri+1} und öffnet Runde ${ri} zum Korrigieren">${undoArmed?`Runde ${ri+1} wirklich verwerfen?`:`Zurück zu Runde ${ri}`}</button>`;
+  h+=`<span class="status">${open?`Noch ${open} ${open===1?"Ergebnis":"Ergebnisse"} offen.`:last?(xr?"Einigen Spielern fehlen noch Spiele. Es folgen Zusatzspiele.":"Alle Runden gespielt."):"Alle Ergebnisse eingetragen."}</span>`;
+  $("#act").innerHTML=h;
+  syncSO();$("#champ").innerHTML=champHtml();renderSO();renderOut();
+}
+
+function renderHist(){
+  const ri=S.rounds.length-1;
+  $("#histc").hidden=ri===0;
+  const line=m=>{const d=m.sa===m.sb;return`<div class="r"><span class="a ${!d&&m.sa>m.sb?"win":""}">${esc(S.names[m.a])}</span><span class="sc">${m.sa} : ${m.sb}</span><span class="b ${!d&&m.sb>m.sa?"win":""}">${esc(S.names[m.b])}</span></div>`};
+  $("#hist").innerHTML=S.rounds.slice(0,ri).map((rd,k)=>`<details><summary>Runde ${k+1}</summary><div class="rows">${rd.m.map(line).join("")}${rd.x?`<p class="note">Zusatzspiel</p>${line(rd.x)}`:""}${rd.bye!=null?`<p class="note">Pausiert: ${esc(S.names[rd.bye])}</p>`:""}</div></details>`).join("");
+}
+/* Runden im überlappenden Modus: Die Runde eines Spiels ist das wievielte Spiel die Beteiligten bestreiten (das höhere zählt).
+   Hat einer der beiden in dieser Runde schon gespielt, ist es das Zusatzspiel dieser Runde. */
+function rollInfo(games,n){
+  const g=Array(n).fill(0),has={},cnt={};
+  const gone=!!(S&&S.games&&(S.out||[]).length);   /* nach einem Ausscheiden: Spiele zwischen Spielern mit unterschiedlichem Stand gleichen aus */
+  return games.map(m=>{
+    if(m.h){const r=g[m.a]+1;g[m.a]++;return{r,x:true,eq:false,hlp:true,j:0}}
+    const eq=gone&&g[m.a]!==g[m.b];
+    const r=Math.max(g[m.a],g[m.b])+1;g[m.a]++;g[m.b]++;
+    const hs=has[r]||(has[r]=new Set()),x=hs.has(m.a)||hs.has(m.b)||eq;hs.add(m.a);hs.add(m.b);
+    return{r,x,eq:gone&&x,j:x?0:(cnt[r]=(cnt[r]||0)+1)};
+  });
+}
+const rollTag=f=>f.x?`Runde ${f.r}, ${f.eq?"Ausgleichsspiel":"Zusatzspiel"}`:`Runde ${f.r}, Spiel ${f.j}`;
+const actN=n=>n-((S&&S.out)||[]).length;
+const rcOf=r=>"rc"+((r-1)%6);
+/* Pause je Runde bei ungerader Spielerzahl: bekannt, sobald alle regulären Spiele der Runde angesetzt sind */
+function rollPauses(games,info,n){
+  const out={},by={};n=actN(n);if(!(n%2))return out;
+  games.forEach((m,i)=>{if(!info[i].x)(by[info[i].r]||(by[info[i].r]=[])).push(m.a,m.b)});
+  for(const r in by)if(by[r].length===n-1){const t=new Set(by[r]);out[r]=[...Array(S?S.n:n).keys()].filter(i=>!t.has(i)&&!isOut(i))}
+  return out;
+}
+/* noch nicht angesetzte Spiele mit voraussichtlicher Runde */
+function rollGhosts(n,R,info){
+  const na=actN(n),m=Math.floor(na/2),reg={},ex={},out=[];
+  info.forEach(f=>{if(f.x)ex[f.r]=1;else reg[f.r]=(reg[f.r]||0)+1});
+  for(let r=1;r<=R;r++){
+    for(let k=(reg[r]||0)+1;k<=m;k++)out.push({r,j:k,x:false});
+    if(na%2&&na===n&&r%2===0&&!ex[r])out.push({r,j:0,x:true});
+  }
+  return out;
+}
+function renderRoll(){rollCur();renderTable();rollActions();rollHist();renderPlan()}
+function rollGo(){justDone.clear();undoArmed=false;rollAdd();save();renderRoll()}
+/* Sichtbar im Bereich oben: offene Spiele, gerade beendete Spiele und der jüngste Block (korrigierbar). Ältere Spiele sind gesperrt. */
+function rollView(){
+  const I=rollInfo(S.games,S.n),mx=I.length?Math.max(...I.map(f=>f.r)):1,K=lastBlock();
+  const rows=S.games.map((m,i)=>[m,i]).filter(([m,i])=>!done(m)||justDone.has(i)||m.k===K).sort((p,q)=>I[p[1]].r-I[q[1]].r||I[p[1]].x-I[q[1]].x||p[1]-q[1]);
+  return{I,mx,rows,shown:new Set(rows.map(r=>r[1]))};
+}
+function rollScore(gi,side,v){
+  const m=S.games[gi],was=done(m);
+  m["s"+side]=v===""?null:Math.min(99,Math.max(0,parseInt(v,10)));
+  if(done(m)!==was){if(done(m))justDone.add(gi);else justDone.delete(gi)}
+  save();renderTable();rollActions();renderPlan();
+  const row=document.getElementById("g"+gi);
+  if(row){const d=done(m);row.querySelector(".a").classList.toggle("win",d&&m.sa>m.sb);row.querySelector(".b").classList.toggle("win",d&&m.sb>m.sa)}
+}
+/* Zurück in Blöcken: verwirft den jüngsten Block (alle Spiele, die mit einem Klick angesetzt wurden). Der Block davor ist wieder korrigierbar. */
+const lastBlock=()=>S.games.reduce((x,m)=>Math.max(x,m.k),-1);
+function rollUndo(){
+  const K=lastBlock();
+  if(K<1)return;
+  const dirty=S.games.some(m=>m.k===K&&(m.sa!=null||m.sb!=null));
+  if(dirty&&!undoArmed){undoArmed=true;rollActions();setTimeout(()=>{undoArmed=false;if(S&&S.ov)rollActions()},3500);return}
+  undoArmed=false;
+  S.games=S.games.filter(m=>m.k!==K);
+  S.games.forEach(m=>{if(m.fin===K)delete m.fin});
+  justDone.clear();
+  S.games.forEach((m,i)=>{if(m.k===K-1&&done(m))justDone.add(i)});
+  save();renderRoll();
+}
+function rollTitle(v){
+  const rs=[...new Set(v.rows.map(([m,i])=>v.I[i].r))];
+  $("#rh").textContent=rs.length===1?`Runde ${rs[0]} von ${S.R}`:rs.length===2?`Runde ${rs[0]} und ${rs[1]} von ${S.R}`:`Runde ${rs[0]} bis ${rs[rs.length-1]} von ${S.R}`;
+}
+function rollCur(){
+  const st=rollState(),v=rollView(),I=v.I,nm=i=>esc(S.names[i]),P=rollPauses(S.games,I,S.n),G=S.games.length+rollLeft()+helpLeft();
+  const row=(m,i)=>`<div class="mw ${rcOf(I[i].r)}"><span class="tag">${rollTag(I[i])} · ${esc(cname(m.c))}${T0()!=null?" · ab "+tt(S.games.slice(0,i).filter(x=>x.c===m.c).length,S.dur+S.brk):""}</span><div class="m" id="g${i}">
+      <div class="a ${done(m)&&m.sa>m.sb?"win":""}">${nm(m.a)}</div>
+      <input type="number" min="0" max="99" inputmode="numeric" enterkeyhint="next" aria-label="Games ${nm(m.a)}" value="${m.sa??""}" oninput="rollScore(${i},'a',this.value)">
+      <div class="sep">:</div>
+      <input type="number" min="0" max="99" inputmode="numeric" enterkeyhint="next" aria-label="Games ${nm(m.b)}" value="${m.sb??""}" oninput="rollScore(${i},'b',this.value)">
+      <div class="b ${done(m)&&m.sb>m.sa?"win":""}">${nm(m.b)}</div>
+    </div>${m.h?`<p class="note">Zusatzspiel zum Ausgleich: zählt nur für ${nm(m.a)}, nicht für ${nm(m.b)}.</p>`:""}</div>`;
+  rollTitle(v);
+  const rs=[...new Set(v.rows.map(([m,i])=>I[i].r))],wait=[...Array(S.n).keys()].filter(i=>!st.busy.has(i)&&st.g[i]<S.R);
+  $("#cur").innerHTML=`<p class="hint">Ergebnis in Games eintragen, z. B. 6 : 4.${S.draw?"":" Unentschieden sind nicht erlaubt."}</p><div class="matches">${v.rows.map(([m,i])=>row(m,i)).join("")}</div>`+
+    rs.filter(r=>P[r]).map(r=>`<p class="note">Pausiert in Runde ${r}: <b>${P[r].map(nm).join(", ")}</b></p>`).join("")+
+    (wait.length&&S.games.length<G?`<p class="wait">Wartende Spieler: ${wait.map(nm).join(", ")}</p>`:"");
+}
+/* Feststehende Spiele, unabhängig von allen noch offenen Ergebnissen:
+   1. Die Spielgruppe mit den wenigsten Spielen: Spielt dort niemand gerade, hängt die Paarung nur noch vom Stand dieser Spieler ab.
+      Ergebnisse laufender Spiele anderer Gruppen ändern sie nicht, und niedrigere Gruppen gibt es nicht. Es stehen also alle noch offenen
+      Spiele dieser Runde fest, auch wenn sie noch auf einen freien Platz warten.
+   2. Rein rechnerisch Vorgegebenes: Jeder Spieler muss noch d = R − g Spiele bestehen (g zählt laufende Spiele mit). Hat ein Spieler a
+      mehr offene Spiele, als alle anderen außer b zusammen noch bestreiten können, muss er mindestens d_a − (D − d_a − d_b)-mal gegen b spielen. */
+function rollSure(){
+  const left=rollLeft(),G=S.games.length+left;
+  if(left<=0)return[];
+  const st=rollState(),n=S.n,R=S.R,g=st.g;
+  const det=[];
+  const act=[...Array(n).keys()].filter(i=>g[i]<R);
+  if(act.length){
+    const gmin=Math.min(...act.map(i=>g[i]));
+    if(!act.some(i=>g[i]===gmin&&st.busy.has(i)))
+      rollPick(st,999).forEach(([a,b])=>{if(g[a]===gmin&&g[b]===gmin)det.push([a,b])});
+  }
+  const d=g.map(x=>R-x),forced=[];
+  if(!d.some(x=>x<0)){
+    for(let ch=true,guard=0;ch&&guard<200;guard++){
+      ch=false;
+      const D=d.reduce((x,y)=>x+y,0);
+      for(let a=0;a<n&&!ch;a++)for(let b=a+1;b<n&&!ch;b++){
+        if(d[a]<=0||d[b]<=0)continue;
+        const m=Math.max(d[a],d[b])-(D-d[a]-d[b]);
+        if(m>0){for(let q=0;q<m;q++)forced.push([a,b]);d[a]-=m;d[b]-=m;ch=true}
+      }
+    }
+  }
+  const cnt=new Map();det.forEach(([a,b])=>cnt.set(key(a,b),(cnt.get(key(a,b))||0)+1));
+  const extra=forced.filter(([a,b])=>{const k=key(a,b),c=cnt.get(k)||0;if(c>0){cnt.set(k,c-1);return false}return true});
+  if(!det.length&&!extra.length)return[];
+  const tmp=S.games.map(m=>({...m}));
+  [...det,...extra].forEach(([a,b])=>tmp.push({a,b,sa:null,sb:null,c:0,k:99}));
+  const I=rollInfo(tmp,n),base=S.games.length;
+  return[...det.map(([a,b],i)=>({a,b,i,j:true})),...extra.map(([a,b],i)=>({a,b,i:det.length+i,j:false}))].map(e=>{
+    const f=I[base+e.i];
+    return{a:e.a,b:e.b,r:f.r,t:e.j?(f.x?(f.eq?"Ausgleichsspiel":"Zusatzspiel"):"Spiel "+f.j):"",o:e.i};
+  }).sort((p,q)=>p.r-q.r||p.o-q.o);
+}
+const sureBox=(title,rows,note)=>rows.length?`<div class="sure"><div class="st">${title}</div>${rows.join("")}${note?`<div class="sn">${note}</div>`:""}</div>`:"";
+/* Meldung bei „Platzierung abwarten“: nennt die laufenden Spiele, auf die gewartet wird (gleiche Spielzahl wie ein freier Spieler) */
+function waitMsg(st,v){
+  const lv=new Set([...Array(S.n).keys()].filter(i=>!st.busy.has(i)&&st.g[i]<S.R).map(i=>st.g[i]));
+  const bl=S.games.map((m,i)=>[m,i]).filter(([m])=>!m.fin&&!done(m)&&lv.has(st.g[m.a]));
+  const nm=i=>esc(S.names[i]);
+  return bl.length?`Platz frei. Gewartet wird auf ${bl.map(([m,i])=>`${rollTag(v.I[i])} (${nm(m.a)}–${nm(m.b)})`).join(" und ")}, damit die Platzierung feststeht.`:"Platz frei. Es wird gewartet, bis die Platzierung der Wartenden feststeht, bitte Ergebnisse eintragen.";
+}
+function rollActions(){
+  const v=rollView(),left=rollLeft()+helpLeft(),G=S.games.length+left,st=rollState(),fin=S.games.filter(done).length,pend=S.games.length-fin;
+  rollTitle(v);
+  const free=S.courts-st.courts.size,peek=free&&left?rollPick(st,free).length:0;
+  $("#prog").textContent=`${fin} von ${G} Spielen beendet`;
+  let h="";
+  if(left)h+=`<button onclick="rollGo()"${peek?"":" disabled"}>${peek>1?peek+" Spiele ansetzen":"Spiel ansetzen"}</button>`;
+  if(lastBlock()>=1){const nb=S.games.filter(m=>m.k===lastBlock()).length;h+=`<button class="${undoArmed?"danger":"quiet"}" onclick="rollUndo()" title="Verwirft die zuletzt angesetzten ${nb} ${nb===1?"Spiel":"Spiele"} und öffnet den Block davor zum Korrigieren">${undoArmed?`${nb} ${nb===1?"Spiel":"Spiele"} wirklich verwerfen?`:"Letzte Ansetzung zurücknehmen"}</button>`}
+  const msg=!left?(pend?`Noch ${pend} ${pend===1?"Ergebnis":"Ergebnisse"} offen.`:"Alle Spiele gespielt."):
+    peek?`${free} ${free===1?"Platz":"Plätze"} frei, ${peek===1?"ein Spiel kann":peek+" Spiele können"} angesetzt werden.`:
+    free?(S.wait?waitMsg(st,v):"Platz frei. Es fehlen noch passende Gegner, bitte Ergebnisse eintragen."):"Alle Plätze belegt.";
+  h+=`<span class="status">${msg}</span>`;
+  const sure=rollSure();
+  h+=sureBox(sure.length===rollLeft()?(left===1?"Das letzte Spiel steht fest":`Die letzten ${rollLeft()} Spiele stehen fest`):sure.length===1?"Dieses Spiel steht schon fest":"Diese Spiele stehen schon fest",sure.map(g=>`<div class="sr"><span class="sl">Runde ${g.r}${g.t?", "+g.t:""}</span><span>${esc(S.names[g.a])} – ${esc(S.names[g.b])}</span></div>`),"Die Paarung hängt nicht mehr von den laufenden Spielen ab.");
+  $("#act").innerHTML=h;
+  syncSO();$("#champ").innerHTML=champHtml();renderSO();renderOut();
+}
+function rollHist(){
+  const v=rollView(),I=v.I,P=rollPauses(S.games,I,S.n),nm=i=>esc(S.names[i]);
+  const openR=new Set([...document.querySelectorAll("#hist details[open]")].map(d=>d.dataset.r));
+  const fin=S.games.map((m,i)=>[m,i]).filter(([m,i])=>done(m)&&!v.shown.has(i)),rs=[...new Set(fin.map(([m,i])=>I[i].r))].sort((a,b)=>a-b);
+  $("#histc").hidden=!fin.length;
+  $("#histc .hint").textContent="Abgeschlossene Spiele sind gesperrt. Zum Korrigieren mit „Letzte Ansetzung zurücknehmen“ zurückgehen.";
+  $("#hist").innerHTML=rs.map(r=>`<details data-r="${r}"${openR.has(String(r))?" open":""}><summary>Runde ${r}</summary><div class="rows">`+
+    fin.filter(([m,i])=>I[i].r===r).sort((p,q)=>I[p[1]].x-I[q[1]].x||p[1]-q[1]).map(([m,i])=>`<div class="mw ${rcOf(r)}"><span class="tag">Runde ${r}, ${I[i].x?(I[i].eq?"Ausgleichsspiel":"Zusatzspiel"):"Spiel "+I[i].j} · ${esc(cname(m.c))}</span><div class="r"><span class="a ${m.sa>m.sb?"win":""}">${nm(m.a)}</span><span class="sc">${m.sa} : ${m.sb}</span><span class="b ${m.sb>m.sa?"win":""}">${nm(m.b)}</span></div></div>`).join("")+(P[r]?`<p class="note">Pausiert: ${P[r].map(nm).join(", ")}</p>`:"")+`</div></details>`).join("");
+}
+/* Plan bei überlappenden Runden: ein Feld pro Spiel und Platz, in Ansetzungsreihenfolge, mit Rundenköpfen */
+function planRoll(n,R,c,dur,brk,games){
+  const step=dur+brk,per=Array.from({length:c},()=>[]),I=rollInfo(games,n),P=rollPauses(games,I,n);
+  games.forEach((m,i)=>per[m.c].push([m,i]));
+  const gh=rollGhosts(n,R,I).slice(0,S&&games===S.games?rollLeft()+helpLeft():n*R/2-games.length),seen=new Set();let gi=0;
+  /* feststehende Spiele (rollSure) in den freien Feldern mit Namen zeigen */
+  if(S&&games===S.games){
+    const used=new Set();
+    rollSure().forEach(g=>{
+      let k=gh.findIndex((f,q)=>!used.has(q)&&f.r===g.r&&(g.t?((g.t==="Zusatzspiel"||g.t==="Ausgleichsspiel")?f.x:(!f.x&&"Spiel "+f.j===g.t)):true));
+      if(k<0)k=gh.findIndex((f,q)=>!used.has(q)&&f.r===g.r);
+      if(k>=0){used.add(k);gh[k].pair=[g.a,g.b];if(!g.t)gh[k].lab="Runde "+g.r}
+    });
+  }
+  const head=r=>`<div class="rh rcb ${rcOf(r)}${seen.size?"":" first"}">Runde ${r}<span>${actN(n)%2?(P[r]?"Pause: "+P[r].map(i=>esc(S.names[i])).join(", "):"Pause: 1 Spieler"):""}</span></div>`;
+  let h=`<div class="plan" style="--cols:${c}"><div class="tm">${T0()!=null?"Uhrzeit":"Beginn"}</div>`+[...Array(c).keys()].map(k=>`<div class="ph">${esc(cname(k))}</div>`).join("");
+  if(wu()){const b=T0();h+=`<div class="tm">${b==null?"0:00":hhmm(b)}</div><div class="warm" style="grid-column:2/-1">Aufwärmen · ${wu()} min</div>`}
+  PCUR=-1;
+  for(let r=0;per.some(a=>a.length>r)||gi<gh.length;r++){
+    const cells=[];
+    for(let k=0;k<c;k++){
+      const e=per[k][r];
+      cells.push(e?{e,f:I[e[1]]}:gi<gh.length&&per[k].length<=r?{f:gh[gi++]}:null);
+    }
+    [...new Set(cells.filter(Boolean).map(x=>x.f.r))].sort((a,b)=>a-b).forEach(rd=>{if(!seen.has(rd)){h+=head(rd);seen.add(rd)}});
+    if(PCUR<0&&cells.some(x=>x&&(!x.e||!done(x.e[0]))))PCUR=r;
+    h+=`<div class="tm">${tt(r,step)}</div>`;
+    cells.forEach(x=>{h+=!x?"<div></div>":x.f.pair?planCell({a:x.f.pair[0],b:x.f.pair[1],sa:null,sb:null},{t:"m"},false,x.f.lab||rollTag(x.f),x.f.r-1).replace('class="cell','class="cell fixd'):planCell(x.e?x.e[0]:null,{t:"m"},!!x.e&&!done(x.e[0]),rollTag(x.f),x.f.r-1)});
+  }
+  if(PCUR<0)PCUR=0;
+  return h+"</div>";
+}
+/* Spielplan-Grafik: ohne Turnier anonym, mit Turnier gefüllt mit Namen und Ergebnissen */
+const clk=t=>Math.floor(t/60)+":"+String(t%60).padStart(2,"0");
+/* „Runde 2, Spiel 1“ → [„Runde 2,“, „Spiel 1“] (ohne Lookbehind, damit auch ältere Safari-Versionen die Seite laden) */
+const tagParts=t=>t.split(", ").map((x,i,a)=>i<a.length-1?x+",":x);
+function planCell(m,it,cur,lab,rc){
+  const c=rc==null?"":" rc"+rc%6;
+  if(!m)return`<div class="cell ghost${c}">${lab?`<span class="tag">${tagParts(lab).map(x=>`<span>${x}</span>`).join(" ")}</span>`:"Spiel"}</div>`;
+  const d=done(m),sc=v=>v==null?"":v,wa=d&&m.sa>m.sb,wb=d&&m.sb>m.sa;
+  return`<div class="cell${cur?" cur":""}${c}">${lab?`<span class="tag">${tagParts(lab).map(x=>`<span>${x}</span>`).join(" ")}</span>`:""}<div class="pl${wa?" w":""}"><span>${esc(S.names[m.a])}</span><b>${sc(m.sa)}</b></div><div class="pl${wb?" w":""}"><span>${esc(S.names[m.b])}</span><b>${sc(m.sb)}</b></div></div>`;
+}
+/* Zeiten anpassen: Startzeit, Aufwärmen und Verzögerungen ab der aktuellen Zeile */
+function timeCtl(){
+  const el=document.getElementById("tctl");if(!el)return;
+  if(!S||VIEW){el.innerHTML="";return}
+  const d=dly(1e9),b=(t,f)=>`<button class="quiet" onclick="${f}">${t}</button>`;
+  el.innerHTML=`<div class="tctl"><label>Startzeit <input type="time" value="${S.t0==null?"":hhmm(S.t0)}" onchange="setT0(this.value)"></label>
+    <label>Aufwärmen <select onchange="setWu(+this.value)">${[0,5,10,15,20,30,45,60].map(x=>`<option value="${x}"${x===(S.wu||0)?" selected":""}>${x?x+" min":"keins"}</option>`).join("")}</select></label>
+    <span class="dl">Verzögerung ab jetzt: ${b("−5 min","addDelay(-5)")}${b("+5 min","addDelay(5)")}${b("+10 min","addDelay(10)")}${d?b("Zurücksetzen","resetDelay()"):""}<span class="hint">${d?"Insgesamt "+(d>0?"+":"")+d+" min gegenüber dem Plan":"Verschiebt alle Zeiten ab der aktuellen Zeile."}</span></span></div>`;
+}
+function setT0(v){const t=tparse(v);if(t==null)delete S.t0;else S.t0=t;save();render()}
+function setWu(v){S.wu=v;save();render()}
+function addDelay(m){S.dl=S.dl||{};const k=PCUR;S.dl[k]=Math.max(-240,Math.min(240,(S.dl[k]||0)+m));if(!S.dl[k])delete S.dl[k];save();render()}
+function resetDelay(){delete S.dl;save();render()}
+function renderPlan(){
+  const el=$("#plan");if(!el)return;timeCtl();
+  const n=S?S.n:+$("#n").value,R=S?S.R:+$("#r").value,mx=Math.floor(n/2);
+  const c=S?Math.min(mx,S.courts||mx):Math.min(mx,+$("#c").value||1);
+  const dur=S?(S.dur||20):+$("#dur").value,brk=S?(S.brk==null?5:S.brk):+$("#brk").value;
+  if(S?S.ov:$("#ov").value!=="no"){el.innerHTML=planRoll(n,R,c,dur,brk,S?S.games:[]);return}
+  const bl=schedule(n,R,c),step=dur+brk,ordered={};
+  const ord=r=>{if(!ordered[r]){const o=S.rounds[r].m.slice(),x=S.rounds[r].x;if(x){const k=o.findIndex(m=>m.a===x.a||m.b===x.a);if(k>0)o.unshift(o.splice(k,1)[0])}ordered[r]=o}return ordered[r]};
+  let h=`<div class="plan" style="--cols:${c}"><div class="tm">${T0()!=null?"Uhrzeit":"Beginn"}</div>`+[...Array(c).keys()].map(k=>`<div class="ph">${esc(cname(k))}</div>`).join("");
+  if(wu()){const b=T0();h+=`<div class="tm">${b==null?"0:00":hhmm(b)}</div><div class="warm" style="grid-column:2/-1">Aufwärmen · ${wu()} min</div>`}
+  let lr=-1;PCUR=-1;
+  bl.forEach((b,i)=>{
+    const rd=S&&S.rounds[b.r];
+    if(b.r!==lr){lr=b.r;h+=`<div class="rh rcb ${rcOf(b.r+1)}${b.r===0?" first":""}">Runde ${b.r+1}<span>${n%2?(rd?(rd.bye!=null?"Pause: "+esc(S.names[rd.bye]):""):"Pause: 1 Spieler"):""}</span></div>`}
+    h+=`<div class="tm">${tt(i,step)}</div>`;
+    for(let k=0;k<c;k++){
+      const it=b.items[k];if(!it){h+="<div></div>";continue}
+      const pm=rd?(it.t==="x"?rd.x:ord(b.r)[it.j]):null;
+      if(PCUR<0&&(!pm||!done(pm)))PCUR=i;
+      h+=planCell(pm,it,!!S&&b.r===S.rounds.length-1,it.t==="x"?`Runde ${b.r+1}, Zusatzspiel`:`Runde ${b.r+1}, Spiel ${(pm?rd.m.indexOf(pm):it.j)+1}`,b.r);
+    }
+  });
+  if(PCUR<0)PCUR=0;
+  el.innerHTML=h+"</div>";
+}
+try{render()}catch(e){/* beschädigter Speicherstand: verwerfen und neu beginnen */S=null;try{localStorage.removeItem(KEY)}catch(_){}render()}
+
+/* Live-Ansicht: Mit der Fähigkeit „db“ stellt die Seite den Spielstand für Zuschauer bereit (nur lesen, Dokument live/state).
+   Wer die Seite bearbeiten darf, stellt bereit. Alle anderen sehen den Stand, solange sie kein eigenes Turnier laufen haben.
+   Ohne die Fähigkeit passiert nichts, die Seite arbeitet wie bisher. Spätere Erweiterung (Beitreten, Ergebnisse eintragen) kann auf live/ aufbauen. */
+function pushLive(){
+  if(!liveDoc||!liveCan||VIEW)return;
+  clearTimeout(liveTimer);
+  liveTimer=setTimeout(()=>{
+    try{
+      const p=S?liveDoc.set({json:JSON.stringify(S),updated:Date.now()}):liveDoc.delete();
+      Promise.resolve(p).then(()=>{if(liveMsg){liveMsg="";renderLiveBar()}},()=>{liveMsg="Die Live-Ansicht konnte nicht aktualisiert werden.";renderLiveBar()});
+    }catch(e){}
+  },700);
+}
+function lockView(){document.querySelectorAll("#app input,#app select,#app textarea,#app button").forEach(e=>{if(!(e.getAttribute("onclick")||"").includes("copyTable"))e.disabled=true})}
+function viewStart(){if(!liveRemote)return;VIEW=true;S=liveRemote;render()}
+function viewEnd(){VIEW=false;S=null;try{const j=localStorage.getItem(KEY);if(j){const x=JSON.parse(j);if(okState(x))S=x}}catch(e){}render()}
+function takeOver(){if(!liveRemote||!liveCan)return;VIEW=false;S=liveRemote;save();render()}
+function renderLiveBar(){
+  const el=$("#livebar");if(!el)return;
+  const b=(t,f,q)=>`<button class="${q?"":"quiet"}" onclick="${f}()">${t}</button>`;
+  el.innerHTML=VIEW?`<span><b>Live-Ansicht</b>, nur lesen. Der Stand aktualisiert sich von selbst.</span>${b("Beenden","viewEnd")}${liveCan?b("Hier weiterführen","takeOver"):""}`:
+    (!S&&liveRemote)?`<span>Es läuft ein Turnier.</span>${b("Live ansehen","viewStart",1)}${liveCan?b("Hier weiterführen","takeOver"):""}`:
+    (S&&liveCan&&liveDoc)?`<span>Live-Ansicht aktiv: Wer diesen Link geöffnet bekommt, sieht den Stand automatisch.${liveMsg?" "+liveMsg:""}</span>`:"";
+}
+async function liveInit(){
+  try{
+    if(!window.claude||typeof window.claude.use!=="function")return;
+    const db=await window.claude.use("db");if(!db)return;
+    try{const u=await window.claude.use("user");liveCan=!!(u&&u.canEdit&&u.canEdit())}catch(e){}
+    liveDoc=db.doc("live/state");
+    liveDoc.onSnapshot(snap=>{
+      let st=null;
+      try{if(snap.exists){st=JSON.parse(snap.data().json);if(!okState(st))st=null}}catch(e){st=null}
+      liveRemote=st;
+      if(VIEW){if(st){S=st;render()}else viewEnd()}else renderLiveBar();
+    },()=>{});
+    if(S&&liveCan)pushLive();
+    renderLiveBar();
+  }catch(e){}
+}
+liveInit();
+</script>
