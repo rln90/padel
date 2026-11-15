@@ -2,6 +2,7 @@
    Arbeitet auf dem globalen Turnierzustand S (siehe okState). Läuft im Browser und auf dem Server.
    Die Oberfläche (ui.js) liegt dahinter in derselben Datei. */
 const MINN=4,MAXN=24,MINR=3,MAXR=20;
+const DURS=[10,15,20,25,30,40,45,60,75,90],BRKS=[...Array(6).keys(),10,15,20];
 let S=null;
 /* Plausibilitätsprüfung eines Spielstands: Unsinnige Werte (z. B. Spielerzahl 1e9) würden die Seite einfrieren */
 function okState(S){
@@ -514,3 +515,5 @@ function undoRoll(){
 }
 /* Spiele ansetzen, soweit Plätze frei sind (überlappend). Liefert die Zahl neuer Spiele. */
 const assignGames=()=>rollAdd();
+/* Darf dieser Spieler jetzt ausscheiden? (mindestens MINN aktive Spieler, Turnier läuft noch) */
+function canDrop(i){return !!S&&Number.isInteger(i)&&i>=0&&i<S.n&&!isOut(i)&&S.n-(S.out||[]).length>MINN&&!isOver()}
