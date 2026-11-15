@@ -9,7 +9,6 @@ let VIEW=false;
 let liveDoc=null,liveCan=false,liveRemote=null,liveTimer=null,liveMsg="",liveAt=0,liveBoot=typeof window!=="undefined"&&!!(window.claude&&typeof window.claude.use==="function");
 const save=()=>{if(VIEW)return;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}pushLive()};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const DURS=[10,15,20,25,30,40,45,60,75,90],BRKS=[...Array(6).keys(),10,15,20];
 function fixT0(el){const t=tparse(el.value);el.value=t==null?"":hhmm(t);syncSetup()}
 const wu=()=>S?(S.wu||0):(+((document.getElementById("wu")||{}).value)||0);
 const T0=()=>S?(S.t0==null?null:S.t0):tparse((document.getElementById("t0")||{}).value);
@@ -40,8 +39,8 @@ function renderOut(){
 }
 function dropPlayer(){
   const sel=$("#dropsel");if(!sel||!S)return;
-  const i=+sel.value,act=[...Array(S.n).keys()].filter(x=>!isOut(x));
-  if(isOut(i)||act.length<=MINN||isOver())return;
+  const i=+sel.value;
+  if(!canDrop(i))return;
   if(dropArmed!==i){dropArmed=i;renderOut();setTimeout(()=>{if(dropArmed===i){dropArmed=null;if(S)renderOut()}},4000);return}
   dropArmed=null;doDrop(i);
   justDone.clear();undoArmed=false;save();render();
