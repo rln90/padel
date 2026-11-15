@@ -27,12 +27,12 @@ for(const mode of ['no','yes','wait']){
   w.start();
   ok(!!q(w,'#mineSel'),mode+': Auswahl "Ich bin"');
   ok(qa(w,'#cur .crt').length>=1,mode+': Platzname fett');
-  set(w,'#mineSel','0');
+  const nmA=q(w,'#cur .mw .m .a').textContent.trim(),names=['Anna','Ben','Cem','Dora','Emil','Fay'],pi=names.indexOf(nmA);set(w,'#mineSel',String(pi));
   const m1=txt(w,'#mine');
-  ok(/Nächstes Spiel: .*Center.* ab 18:00 .* gegen/.test(m1)||/Nächstes Spiel: .*ab 18:00.*gegen/.test(m1),mode+': Nächstes Spiel Anna: '+m1);
+  ok(/Nächstes Spiel: .*Center.* ab 18:00 .* gegen/.test(m1)||/Nächstes Spiel: .*ab 18:00.*gegen/.test(m1),mode+': Nächstes Spiel '+nmA+': '+m1);
   // Gegner stimmt mit angezeigter Paarung überein
-  const rows=qa(w,'#cur .mw');const mine=rows.find(r=>/Anna/.test(r.querySelector('.m').textContent));
-  const opp=mine&&mine.querySelector('.m').textContent.replace(/Anna/,'').match(/[A-Z][a-z]+/);
+  const rows=qa(w,'#cur .mw');const mine=rows.find(r=>r.querySelector('.m').textContent.includes(nmA));
+  const opp=mine&&mine.querySelector('.m').textContent.replace(nmA,'').match(/[A-Z][a-z]+/);
   ok(mine&&opp&&m1.includes(opp[0]),mode+': Gegner passt zur Spielzeile ('+(opp&&opp[0])+')');
   // Reload merkt Auswahl
   const tm=qa(w,'#plan .tm.now');ok(tm.length===1,mode+': genau eine markierte Zeile ('+tm.length+')');
