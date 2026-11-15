@@ -19,4 +19,6 @@ echo "live: $(node live2.js 2>&1 | tail -1)"
 echo "lead: $(node lead3.js 2>&1 | tr '\n' ' ')"
 echo "order: $(node order.js ${PADEL_HTML:-../dist/padel-turnier.html} 800 2>&1 | tail -1)"
 echo "new1: $(node new1.js 2>&1 | grep -E '^(A/B|C:|D:)' | tr '\n' ' ')"
+echo "engine-diff: $(node engine-diff.js 600 2>&1 | tail -1)"
+for t in v36 zeit courtnames sec bk rules helperui; do echo "$t: $(node $t.js 2>&1 | grep -E 'FEHLER|ALLES OK|JS-Fehler' | tr '\n' ' ' | cut -c1-200)"; done
 echo "ENDE2"
