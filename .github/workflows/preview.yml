@@ -35,13 +35,15 @@ jobs:
           set -o pipefail
           output="$(npx wrangler preview --name "pr-${{ github.event.pull_request.number }}" --json)"
           printf '%s\n' "$output"
-          url="$(printf '%s' "$output" | jq -er '.preview.urls[0]')"
+          # wrangler schreibt vor dem JSON Fortschrittszeilen. Nur ab der ersten Zeile mit "{" auswerten.
+          url="$(printf '%s\n' "$output" | awk '/^\{/{f=1} f' | jq -er '.preview.urls[0]')"
           echo "url=$url" >> "$GITHUB_OUTPUT"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       - name: Link in den Pull Request schreiben
-        run: gh pr comment "${{ github.event.pull_request.number }}" --edit-last --create-if-none --body "Vorschau: ${{ steps.vorschau.outputs.url }}  (Schlüssel zum Anlegen eines Test-Turniers: vorschau)"
+        run: |
+          gh pr comment "${{ github.event.pull_request.number }}" --edit-last --create-if-none --body "Vorschau: ${{ steps.vorschau.outputs.url }} (Schlüssel zum Anlegen eines Test-Turniers: vorschau)"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
