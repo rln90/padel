@@ -15,7 +15,8 @@
     "test:audit": "node tests/online/audit.mjs",
     "test:csp": "node tests/online/csp.mjs",
     "test:probe": "node tests/online/generalprobe.mjs",
-    "test:qr": "node tests/online/qr.mjs"
+    "test:qr": "node tests/online/qr.mjs",
+    "test:backup": "node tests/online/backup.mjs"
   },
   "devDependencies": {
     "jsdom": "^24.0.0",

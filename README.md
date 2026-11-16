@@ -61,3 +61,13 @@ Grenzen: Die CSP erlaubt `'unsafe-inline'` für Skripte, weil die Oberfläche In
 
 ## QR-Code für den Spielerlink
 Im Warteraum steht unter dem Spielerlink ein QR-Code, später im Organisator-Bereich unter „QR-Code für Spieler“. Er wird auf der Seite selbst erzeugt (Bibliothek `src/vendor/qrcode.min.js`, MIT, kein externer Dienst), immer schwarz auf weiß mit Ruhezone, auch im dunklen Modus. `npm run test:qr` liest den gerenderten Code mit einem Scanner (jsQR) aus und vergleicht ihn mit dem Spielerlink.
+
+## Betrieb (Phase 5)
+| Bereich | Umsetzung |
+|---|---|
+| Automatische Tests | `.github/workflows/ci.yml`: bei jedem Pull Request und auf `main`. Job `schnell` (Build-Prüfung, Server, Oberfläche), Job `browser` (echter Chromium gegen `wrangler dev`: e2e, Audit, CSP, QR, Sicherung, Generalprobe) |
+| Fehlerprotokoll | `[observability]` in `wrangler.toml`: Logs im Cloudflare-Dashboard (Worker, Observability). Der Server schreibt nur technische Fehler (`intern`, `speichern`) und Sperren des Limiters. Nie Namen, Zugangsschlüssel oder IP-Adressen |
+| Sicherung | Organisator-Bereich: „Sicherung herunterladen“ (JSON, ohne Zugangsdaten). Startseite, „Neues Turnier anlegen“, „Aus Sicherung wiederherstellen“: braucht den Schlüssel, ergibt ein neues Turnier mit neuem Code. Alle Spieler sind „frei“ und tragen ihren Namen wieder ein |
+| Prüfung Sicherung | Simulation: bei jedem Lauf mehrfach sichern, wiederherstellen, Stand vergleichen (586 Rundläufe); `npm run test:backup` im Browser |
+
+Grenzen der Sicherung: Das Protokoll der Änderungen und offene Ausscheiden-Anfragen werden nicht gesichert. Dateien über 400 KB werden abgelehnt. Das Wiederherstellen legt immer ein neues Turnier an, es überschreibt nichts.

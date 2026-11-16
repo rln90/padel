@@ -5,6 +5,10 @@ compatibility_date = "2025-09-01"
 # Im Dashboard angelegte Variablen bleiben bei jedem Deploy erhalten (sonst löscht Wrangler sie).
 keep_vars = true
 
+# Fehlerprotokoll im Cloudflare-Dashboard (Worker, Reiter Observability / Logs)
+[observability]
+enabled = true
+
 [assets]
 directory = "./public"
 binding = "ASSETS"
