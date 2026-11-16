@@ -1,0 +1,62 @@
+name: Vorschau
+
+# Legt für jeden Pull Request eine eigene Vorschau auf Cloudflare an (Worker Previews) und schreibt den Link in den PR.
+# Nur für Pull Requests aus diesem Repository, weil Fremde keinen Zugriff auf die Cloudflare-Zugangsdaten bekommen dürfen.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: vorschau-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  vorschau:
+    if: github.event.action != 'closed' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Prüfen, ob public/index.html und der Server-Code zum Quellcode passen
+        run: node tools/build.js --check && node tools/build-server.js --check
+      - name: Tests (Server und Oberfläche)
+        run: npm run test:server && npm run test:online
+      - id: vorschau
+        name: Vorschau anlegen oder aktualisieren
+        run: |
+          set -o pipefail
+          output="$(npx wrangler preview --name "pr-${{ github.event.pull_request.number }}" --json)"
+          printf '%s\n' "$output"
+          url="$(printf '%s' "$output" | jq -er '.preview.urls[0]')"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Link in den Pull Request schreiben
+        run: gh pr comment "${{ github.event.pull_request.number }}" --edit-last --create-if-none --body "Vorschau: ${{ steps.vorschau.outputs.url }}  (Schlüssel zum Anlegen eines Test-Turniers: vorschau)"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  aufraeumen:
+    if: github.event.action == 'closed' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Vorschau löschen
+        run: npx wrangler preview delete --name "pr-${{ github.event.pull_request.number }}" --skip-confirmation
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
