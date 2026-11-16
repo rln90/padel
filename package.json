@@ -7,9 +7,14 @@
     "build": "node tools/build.js",
     "test": "bash tests/run-all.sh",
     "build:server": "node tools/build-server.js",
-    "test:server": "node tools/build-server.js --check && node tests/server/functional.test.mjs && node tests/server/sim.test.mjs 80 && node tests/server/fuzz.test.mjs 40"
+    "test:server": "node tools/build-server.js --check && node tests/server/functional.test.mjs && node tests/server/sim.test.mjs 80 && node tests/server/fuzz.test.mjs 40",
+    "build:check": "node tools/build.js --check",
+    "dev": "wrangler dev --local --port 8787 --var CREATE_KEY:geheim",
+    "test:online": "node tests/online/ui-online.test.mjs yes && node tests/online/ui-online.test.mjs no && node tests/online/ui-online.test.mjs wait",
+    "test:e2e": "node tests/online/e2e.mjs"
   },
   "devDependencies": {
-    "jsdom": "^24.0.0"
+    "jsdom": "^24.0.0",
+    "wrangler": "^4.162.0"
   }
 }
