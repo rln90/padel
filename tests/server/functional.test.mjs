@@ -223,5 +223,41 @@ const NAMES=['Anna','Ben','Cem','Dora','Emil','Fay','Gero','Hanna'];
   fail=false;const st=(await c('GET',T(code)+'/state')).json;ok(st.players.length===1,'Nach Speicherfehler kein halber Zustand ('+st.players.length+')');
   ok((await join(c,code,'Ben')).status===200,'Danach wieder möglich');
 }
+// ---- Phase 4: Header und Schutz beim Anlegen
+{
+  const {env,c,code}=await mk({});
+  const res=await (await import('../../server/worker.mjs')).default.fetch(new Request('https://padel.test/api/t/'+code+'/state'),env);
+  const h=n=>res.headers.get(n)||'';
+  ok(/default-src 'none'/.test(h('content-security-policy'))&&/frame-ancestors 'none'/.test(h('content-security-policy')),'API: CSP gesetzt');
+  ok(h('x-content-type-options')==='nosniff'&&h('referrer-policy')==='no-referrer'&&/noindex/.test(h('x-robots-tag'))&&h('cache-control')==='no-store','API: nosniff, Referrer, noindex, no-store');
+}
+{
+  const env=makeEnv({}),c=client(env),ip=x=>({'cf-connecting-ip':x}),bad=x=>c('POST','/api/t',{headers:{'x-create-key':'falsch',...ip(x)},body:{}}),good=x=>c('POST','/api/t',{headers:{'x-create-key':'geheim',...ip(x)},body:{}});
+  let all403=true;for(let i=0;i<8;i++)if((await bad('1.1.1.1')).status!==403)all403=false;
+  ok(all403,'Limiter: 8 falsche Schlüssel -> je 403');
+  const r9=await bad('1.1.1.1');ok(r9.status===429&&r9.json.err==='gesperrt','Limiter: 9. falscher Schlüssel gesperrt ('+r9.status+')');
+  const rg=await good('1.1.1.1');ok(rg.status===429,'Limiter: auch richtiger Schlüssel während der Sperre 429 ('+rg.status+')');
+  ok(rg.text.indexOf('geheim')<0&&/Schlüssel/.test(rg.json.msg),'Limiter: Meldung ohne Schlüssel, auf Deutsch');
+  ok((await good('2.2.2.2')).status===200,'Limiter: andere IP nicht betroffen');
+  env.clock+=14*60e3;ok((await good('1.1.1.1')).status===429,'Limiter: nach 14 min noch gesperrt');
+  env.clock+=2*60e3;ok((await good('1.1.1.1')).status===200,'Limiter: nach 16 min wieder frei');
+}
+{
+  const env=makeEnv({}),c=client(env),good=()=>c('POST','/api/t',{headers:{'x-create-key':'geheim','cf-connecting-ip':'3.3.3.3'},body:{}});
+  let n30=0;for(let i=0;i<30;i++)if((await good()).status===200)n30++;
+  ok(n30===30,'Limiter: 30 Turniere pro Stunde erlaubt ('+n30+')');
+  const r=await good();ok(r.status===429&&r.json.err==='zu_viele','Limiter: 31. Turnier gebremst ('+r.status+')');
+  const w=await c('POST','/api/t',{headers:{'x-create-key':'falsch','cf-connecting-ip':'3.3.3.3'},body:{}});ok(w.status===403,'Limiter: falscher Schlüssel bleibt 403, nicht 429');
+  env.clock+=61*60e3;ok((await good()).status===200,'Limiter: nach einer Stunde wieder frei');
+}
+{
+  const env=makeEnv({noLimiter:true}),c=client(env);
+  ok((await c('POST','/api/t',{headers:{'x-create-key':'falsch'},body:{}})).status===403,'Ohne Limiter-Anbindung: falsch -> 403');
+  ok((await c('POST','/api/t',{headers:{'x-create-key':'geheim'},body:{}})).status===200,'Ohne Limiter-Anbindung: richtig -> 200');
+  const e2=makeEnv({});e2.LIMITER={idFromName:n=>n,get(){return{fetch:async()=>{throw new Error('kaputt')}}}};
+  const r=await client(e2)('POST','/api/t',{headers:{'x-create-key':'geheim'},body:{}});ok(r.status===503,'Limiter fällt aus: sicher gesperrt, 503 ('+r.status+')');
+  const e3=makeEnv({});const m=await client(e3)('POST','/api/t',{headers:{'x-create-key':'geheim'},body:{}});
+  ok((await client(e3)('GET','/api/t/'+m.json.code+'/state')).status===200,'Limiter stört Spielbetrieb nicht');
+}
 console.log(f?`FEHLER gesamt ${f} von ${n}`:`ALLES OK (${n} Prüfungen)`);
 process.exit(f?1:0);

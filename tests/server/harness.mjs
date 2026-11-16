@@ -1,5 +1,5 @@
 // Test-Harness: Worker und Durable Object in Node, mit nachgebautem Speicher (kein Cloudflare nötig).
-import worker,{TournamentDO} from '../../server/worker.mjs';
+import worker,{TournamentDO,LimiterDO} from '../../server/worker.mjs';
 
 export function seeded(seed){return()=>{seed=(seed+0x6D2B79F5)>>>0;let t=seed;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
 
@@ -34,6 +34,7 @@ export function makeEnv(opts={}){
     async alarmAll(){for(const [name,t] of alarms)if(t<=env.NOW()){const o=inst.get(name);if(o)await o.alarm();else{/* geladen nötig */ }}},
     _stores:stores,_inst:inst,_alarms:alarms,
   };
+  if(!opts.noLimiter){const lo=new LimiterDO({},env);env.LIMITER={idFromName:n=>n,get(){return{fetch:(u,i)=>lo.fetch(u instanceof Request?u:new Request(u,i))}}}}
   return env;
 }
 export function client(env,log){

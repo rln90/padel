@@ -12,7 +12,8 @@
     "dev": "wrangler dev --local --port 8787 --var CREATE_KEY:geheim",
     "test:online": "node tests/online/ui-online.test.mjs yes && node tests/online/ui-online.test.mjs no && node tests/online/ui-online.test.mjs wait",
     "test:e2e": "node tests/online/e2e.mjs",
-    "test:audit": "node tests/online/audit.mjs"
+    "test:audit": "node tests/online/audit.mjs",
+    "test:csp": "node tests/online/csp.mjs"
   },
   "devDependencies": {
     "jsdom": "^24.0.0",
