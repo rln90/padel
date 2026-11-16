@@ -1,3 +1,5 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Padel-Turnier</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:wght@500;600&display=swap">
@@ -216,7 +218,12 @@ details.panel{gap:12px}
 .adm select{width:auto;min-width:160px}
 body.onl-me .mine>label,body.onl-me .mine>select{display:none}
 .panel summary{padding:6px 0}
-@media (max-width:480px){.pctl input{width:100%}.pctl{width:100%}}
+@media (max-width:480px){.pctl:not(.full) input{width:100%}.pctl{width:100%}}
+.plist li.adm-li{flex-direction:column;align-items:stretch;gap:4px}
+.pctl.full{flex-wrap:nowrap;width:100%}
+.pctl.full input{flex:1 1 auto;width:auto;min-width:0}
+.pctl.full button{flex:0 0 auto}
+.pn.sub{font-size:13px}
 </style>
 
 <main>
@@ -953,6 +960,16 @@ function fillWait(n,R,dur,brk,draw,mx){
   setTimeout(next,0);
 }
 const fc=t=>{const h=Math.floor(t/60),m=t%60;return h+":"+String(m).padStart(2,"0")+" h"};
+const RULES_HTML=`<details class="rules"><summary>Spielregeln</summary><ul>
+        <li>Wertung: Sieg 3 Punkte, Unentschieden 1 Punkt (nur wenn erlaubt), Niederlage 0. Das Ergebnis wird in Games eingetragen, bei Zeitlimit zählt der Stand nach Ablauf.</li>
+        <li>Platzierung: Punkte, dann Direktvergleich, Game-Differenz, Buchholz (Punkte der Gegner), Siege, erzielte Games. Sind 2 bis 4 Spieler bei den Plätzen 1 bis 3 punktgleich, spielen sie am Ende Entscheidungsspiele jeder gegen jeden.</li>
+        <li>Paarung: Runde 1 wird ausgelost. Ab Runde 2 wird nach Tabelle gepaart, bevorzugt Spieler mit benachbarten Plätzen (1. gegen 2., 3. gegen 4. usw.), und ohne Wiederholungen, solange das möglich ist. Dafür zählen Punkte, Game-Differenz, Siege und erzielte Games.</li>
+        <li>Bei ungerader Spielerzahl pausiert pro Runde möglichst, wer bisher am seltensten pausiert hat, davon der Tabellenletzte. Bei Gleichstand und in Runde 1 entscheidet das Los.</li>
+        <li>Nach jeder zweiten Runde spielen die beiden Pausierenden ein Zusatzspiel, damit am Ende alle gleich viele Spiele haben.</li>
+        <li>Scheidet ein Spieler aus, zählen seine bisherigen Spiele für die Gegner weiter. Wer dadurch ein Spiel verliert, bekommt ein Ausgleichsspiel. Fehlt am Ende noch jemandem ein Spiel, spielt er ein Zusatzspiel gegen einen tabellenähnlichen Gegner. Es zählt nur für ihn, nicht für den Gegner.</li>
+        <li>Ohne Überlappung: Spiele laufen gleichzeitig, soweit Plätze frei sind. Eine neue Runde beginnt erst, wenn alle Ergebnisse vorliegen. Ein Zusatzspiel startet nach dem regulären Spiel des Spielers, der in der Vorrunde pausiert hat.</li>
+        <li>Mit Überlappung: Ein Spiel beginnt, sobald ein Platz frei ist und die Spieler bereit sind, auch wenn die Vorrunde noch läuft. Gepaart werden bevorzugt Spieler mit gleich vielen bisherigen Spielen, nach Tabelle. Bei „Ja, sofort weiter“ kennt die Paarung nicht den Stand der laufenden Spiele, Wiederholungsspiele lassen sich seltener vermeiden. Bei „Ja, Platzierung abwarten“ wird ein Spiel erst angesetzt, wenn laufende Spiele die Platzierung der beiden Spieler nicht mehr verändern können. Ein Platz bleibt dafür manchmal kurz frei, Wiederholungsspiele werden dabei möglichst vermieden. Die Vorsprung-Grenze (nur „sofort weiter“) hält die Spielzahlen enger beieinander.</li>
+      </ul></details>`;
 function syncSetup(){
   const n=+$("#n").value,sel=$("#r"),cur=validR(n,+sel.value||4);
   sel.innerHTML=roundOpts(n).map(r=>`<option value="${r}"${r===cur?" selected":""}>${r} Runden</option>`).join("");
@@ -1080,16 +1097,7 @@ function render0(){
       <details class="cmp"><summary>Dauer nach Platzzahl vergleichen</summary><div id="ptab"></div></details>
       <details class="names"><summary>Namen für Spieler und Plätze (optional) <span id="ns" class="meta"></span></summary><div id="nf"></div></details>
       <div class="actions"><button onclick="start()">Turnier starten</button></div>
-      <details class="rules"><summary>Spielregeln</summary><ul>
-        <li>Wertung: Sieg 3 Punkte, Unentschieden 1 Punkt (nur wenn erlaubt), Niederlage 0. Das Ergebnis wird in Games eingetragen, bei Zeitlimit zählt der Stand nach Ablauf.</li>
-        <li>Platzierung: Punkte, dann Direktvergleich, Game-Differenz, Buchholz (Punkte der Gegner), Siege, erzielte Games. Sind 2 bis 4 Spieler bei den Plätzen 1 bis 3 punktgleich, spielen sie am Ende Entscheidungsspiele jeder gegen jeden.</li>
-        <li>Paarung: Runde 1 wird ausgelost. Ab Runde 2 wird nach Tabelle gepaart, bevorzugt Spieler mit benachbarten Plätzen (1. gegen 2., 3. gegen 4. usw.), und ohne Wiederholungen, solange das möglich ist. Dafür zählen Punkte, Game-Differenz, Siege und erzielte Games.</li>
-        <li>Bei ungerader Spielerzahl pausiert pro Runde möglichst, wer bisher am seltensten pausiert hat, davon der Tabellenletzte. Bei Gleichstand und in Runde 1 entscheidet das Los.</li>
-        <li>Nach jeder zweiten Runde spielen die beiden Pausierenden ein Zusatzspiel, damit am Ende alle gleich viele Spiele haben.</li>
-        <li>Scheidet ein Spieler aus, zählen seine bisherigen Spiele für die Gegner weiter. Wer dadurch ein Spiel verliert, bekommt ein Ausgleichsspiel. Fehlt am Ende noch jemandem ein Spiel, spielt er ein Zusatzspiel gegen einen tabellenähnlichen Gegner. Es zählt nur für ihn, nicht für den Gegner.</li>
-        <li>Ohne Überlappung: Spiele laufen gleichzeitig, soweit Plätze frei sind. Eine neue Runde beginnt erst, wenn alle Ergebnisse vorliegen. Ein Zusatzspiel startet nach dem regulären Spiel des Spielers, der in der Vorrunde pausiert hat.</li>
-        <li>Mit Überlappung: Ein Spiel beginnt, sobald ein Platz frei ist und die Spieler bereit sind, auch wenn die Vorrunde noch läuft. Gepaart werden bevorzugt Spieler mit gleich vielen bisherigen Spielen, nach Tabelle. Bei „Ja, sofort weiter“ kennt die Paarung nicht den Stand der laufenden Spiele, Wiederholungsspiele lassen sich seltener vermeiden. Bei „Ja, Platzierung abwarten“ wird ein Spiel erst angesetzt, wenn laufende Spiele die Platzierung der beiden Spieler nicht mehr verändern können. Ein Platz bleibt dafür manchmal kurz frei, Wiederholungsspiele werden dabei möglichst vermieden. Die Vorsprung-Grenze (nur „sofort weiter“) hält die Spielzahlen enger beieinander.</li>
-      </ul></details>
+      ${RULES_HTML}
       <details class="rules"><summary>Handhabung</summary><ul>
         <li>Einrichten: Spieler, Runden, Plätze und Modus wählen. Namen für Spieler und Plätze sind optional, leere Felder heißen A, B, C … bzw. Platz 1, Platz 2 … Eine Liste mit Komma oder Zeilenumbruch lässt sich in ein Feld einfügen. Mit Startzeit (Beginn der Platzbuchung) und Aufwärmen zeigt der Spielplan Uhrzeiten, das Aufwärmen liegt am Anfang der Buchung.</li>
         <li>Buchung: Unter den Einstellungen steht, wie lange jeder Platz gebucht werden sollte. Bei überlappenden Runden wird das aus simulierten Turnieren berechnet. „Buchungssicherheit“ legt fest, wie oft die Buchung reichen soll (Abwarten: Knapp ca. 50 %, Normal ca. 75 %, Sicher ca. 95 % der simulierten Turniere. Sofort weiter: Knapp ohne, Normal mit einem, Sicher mit zwei Zeitblöcken Reserve). Der Vergleich nach Platzzahl zeigt dieselbe Rechnung für andere Platzzahlen.</li>
@@ -1591,9 +1599,10 @@ function paintPanels(){
     if(!CODE)top+=landing();
     else if(!D)top+='<p class="hint wait0">Lädt …</p>';
     else if(D.status==="lobby")top+=lobby();
-    else{top+=playerPanel()+adminPanel();bot=bottom()}
+    else{top+=playerPanel()+adminPanel();bot=bottom()+`<section class="panel">${rulesBox()}</section>`}
     a.innerHTML=top;b.innerHTML=bot;paintFlash();
   });
+  if(D&&D.status==="lobby"&&isAdm()&&q("#sum")){try{syncSetup()}catch(e){}}
 }
 
 /* Startseite: Code eingeben oder neues Turnier anlegen */
@@ -1634,44 +1643,54 @@ function lobby(){
   h+=`<section class="panel"><div class="head"><h2>Spieler</h2><span class="meta">${n} von 24${n<4?", mindestens 4":""}</span></div>
     ${n?`<ul class="plist">${D.players.map((p,i)=>playerLi(p,i,adm,mi)).join("")}</ul>`:'<p class="hint">Noch niemand eingetragen.</p>'}
     ${adm?`<div class="field"><label for="addIn">Spieler selbst eintragen</label><div class="linkrow"><input id="addIn" data-d="add" maxlength="24" placeholder="Name">${btn("add","Hinzufügen",{q:true})}</div></div>`:""}</section>`;
+  h+=`<section class="panel">${rulesBox()}</section>`;
   if(adm)h+=configPanel(n)+`<section class="panel"><div class="actions">${sure("start","start","Turnier starten","Wirklich starten? Danach kann niemand mehr beitreten.",{attr:n<4?"disabled":""})}</div>
     <p class="hint">${n<4?"Zum Start braucht es mindestens 4 Spieler.":"Beim Start werden Runde 1 oder die ersten Spiele ausgelost."}</p></section>`;
   return h;
 }
 function playerLi(p,i,adm,mi){
-  const you=i===mi?' <span class="gone">du</span>':"",free=p.released?' <span class="gone">Zugang frei</span>':"",mine=!p.taken&&!p.released?' <span class="gone">vom Organisator eingetragen</span>':"";
-  let ctl="";
-  if(adm)ctl=`<span class="pctl"><input data-d="pn${p.id}" maxlength="24" value="${esc(p.name)}" aria-label="Name ${esc(p.name)}">${btn("prename","Ändern",{q:true,attr:'data-pid="'+p.id+'"'})}${btn("kick","Entfernen",{q:true,attr:'data-pid="'+p.id+'"'})}${p.taken?btn("release","Zugang freigeben",{q:true,attr:'data-pid="'+p.id+'"'}):""}</span>`;
-  return`<li><span class="pn">${esc(p.name)}${you}${free}${mine}</span>${ctl}</li>`;
+  const badge=(i===mi?' <span class="gone">du</span>':"")+(p.released?' <span class="gone">Zugang frei</span>':"")+(!p.taken&&!p.released?' <span class="gone">vom Organisator eingetragen</span>':"");
+  if(!adm)return`<li><span class="pn">${esc(p.name)}${badge}</span></li>`;
+  return`<li class="adm-li"><span class="pctl full"><input data-d="pn${p.id}" maxlength="24" value="${esc(p.name)}" aria-label="Name ${esc(p.name)}">${btn("prename","Ändern",{q:true,attr:'data-pid="'+p.id+'"'})}${btn("kick","Entfernen",{q:true,attr:'data-pid="'+p.id+'"'})}</span>${badge.trim()?`<span class="pn sub">${badge}</span>`:""}</li>`;
 }
 
-/* Einstellungen (Warteraum) */
-function sel(id,opts,cur){return`<select id="${id}" data-d="${id}">${opts.map(([v,t])=>`<option value="${esc(v)}"${String(v)===String(cur)?" selected":""}>${esc(t)}</option>`).join("")}</select>`}
-const cur=(k,def)=>{const e=document.querySelector('[data-d="'+k+'"]');return e&&changed(e)?e.value:def};
+/* Einstellungen (Warteraum): gleiche Felder und gleiche Berechnung wie in der Offline-Einrichtung (syncSetup) */
+const opts=(arr,cur)=>arr.map(([v,t])=>`<option value="${esc(v)}"${String(v)===String(cur)?" selected":""}>${esc(t)}</option>`).join("");
+const fld=(id,label,arr,cur,extra="")=>`<div class="field"${extra}><label for="${id}">${label}</label><select id="${id}" data-d="${id}">${opts(arr,cur)}</select></div>`;
 function configPanel(n){
-  const c={...D.cfg};c.ov=cur("ov",c.ov);c.lim=cur("lim",c.lim?"yes":"no")==="yes";
-  for(const k of ["R","courts","dur","brk"])c[k]=+cur(k,c[k]);
-  const rng=(a,b)=>[...Array(b-a+1).keys()].map(k=>[a+k,String(a+k)]);
-  const est=c.ov!=="wait"&&n>=4?(()=>{try{const R=validR(n,c.R),cc=Math.min(Math.floor(n/2),c.courts);const t=plan(n,R,cc,c.dur,c.brk,c.ov==="yes").total;return`Geplant ca. ${fc(t)} bei ${n} Spielern, ${R} Runden und ${cc} ${cc===1?"Platz":"Plätzen"}.`}catch(e){return""}})():"";
+  const c=D.cfg,N=Math.max(MINN,n),mx=Math.floor(N/2),R=validR(N,c.R),cc=Math.min(mx,c.courts);
   return`<details class="panel cfg"${OPEN.has("cfg")?" open":""} data-k="cfg"><summary>Einstellungen</summary>
-    <div class="grid">
-      <div class="field"><label for="R">Runden</label>${sel("R",rng(3,20),c.R)}</div>
-      <div class="field"><label for="courts">Plätze</label>${sel("courts",rng(1,12),c.courts)}</div>
-      <div class="field"><label for="ov">Runden überlappen</label>${sel("ov",[["no","Nein, Runde für Runde"],["yes","Ja, sofort weiter"],["wait","Ja, Platzierung abwarten"]],c.ov)}</div>
-      ${c.ov==="yes"?`<div class="field"><label for="lead">Vorsprung begrenzen</label>${sel("lead",[[0,"Keine Grenze"],[1,"Höchstens 1 Spiel"],[2,"Höchstens 2 Spiele"]],c.lead)}</div>`:""}
-      <div class="field"><label for="lim">Zeitlimit pro Spiel</label>${sel("lim",[["yes","Ja"],["no","Nein"]],c.lim?"yes":"no")}</div>
-      <div class="field"><label for="dur">${c.lim?"Spielzeit":"Geplante Dauer"}</label>${sel("dur",DURS.map(d=>[d,d+" min"]),c.dur)}</div>
-      <div class="field"><label for="brk">Wechselzeit</label>${sel("brk",BRKS.map(d=>[d,d+" min"]),c.brk)}</div>
-      ${c.lim?`<div class="field"><label for="draw">Unentschieden</label>${sel("draw",[["yes","Erlaubt"],["no","Nicht erlaubt"]],c.draw?"yes":"no")}</div>`:""}
-      <div class="field"><label for="t0">Startzeit (optional)</label><input id="t0" data-d="t0" inputmode="numeric" maxlength="5" placeholder="hh:mm" value="${c.t0==null?"":esc(hhmm(c.t0))}"></div>
-      <div class="field"><label for="wu">Aufwärmen</label>${sel("wu",[0,5,10,15,20,30].map(b=>[b,b?b+" min":"Keins"]),c.wu)}</div>
+    <input type="hidden" id="n" value="${N}"><p id="pleg" hidden></p>
+    ${n<MINN?`<p class="hint">Die Berechnung unten gilt für ${MINN} Spieler, bis genug Spieler eingetragen sind.</p>`:""}
+    <fieldset class="grp"><legend>Runden und Plätze</legend><div class="grid">
+      ${fld("r","Runden",roundOpts(N).map(r=>[r,r+" Runden"]),R)}
+      ${fld("c","Plätze",[...Array(mx).keys()].map(k=>[k+1,(k+1)+" "+(k?"Plätze":"Platz")]),cc)}
+    </div></fieldset>
+    <fieldset class="grp"><legend>Ablauf</legend><div class="grid">
+      ${fld("ov","Runden überlappen",[["no","Nein, Runde für Runde"],["yes","Ja, sofort weiter"],["wait","Ja, Platzierung abwarten"]],c.ov)}
+      ${fld("lead","Vorsprung begrenzen",[[0,"Keine Grenze"],[1,"Höchstens 1 Spiel Vorsprung"],[2,"Höchstens 2 Spiele Vorsprung"]],c.lead,c.ov==="yes"?' id="leadf"':' id="leadf" hidden')}
+    </div></fieldset>
+    <fieldset class="grp"><legend>Spielzeit</legend><div class="grid">
+      ${fld("lim","Zeitlimit pro Spiel",[["yes","Ja"],["no","Nein"]],c.lim?"yes":"no")}
+      <div class="field"><label for="dur" id="durl">Spielzeit pro Spiel</label><select id="dur" data-d="dur">${opts(DURS.map(d=>[d,d+" min"]),c.dur)}</select></div>
+      ${fld("draw","Unentschieden",[["yes","Erlaubt, Stand nach Zeitablauf"],["no","Nicht erlaubt"]],c.draw?"yes":"no")}
+      ${fld("brk","Wechsel- und Pausenzeit",BRKS.map(d=>[d,d+" min"]),c.brk)}
+    </div></fieldset>
+    <fieldset class="grp"><legend>Uhrzeit und Buchung</legend><div class="grid">
+      <div class="field"><label for="t0">Startzeit (optional)</label><input id="t0" data-d="t0" type="text" inputmode="numeric" autocomplete="off" maxlength="5" placeholder="hh:mm, z. B. 18:30" value="${c.t0==null?"":esc(hhmm(c.t0))}"></div>
+      ${fld("wu","Aufwärmen vor dem ersten Spiel",[0,5,10,15,20,30].map(b=>[b,b?b+" min":"Kein Aufwärmen"]),c.wu)}
+      ${fld("sec","Buchungssicherheit",[[50,"Knapp: reicht meist"],[75,"Normal: reicht fast immer"],[95,"Sicher: mit Reserve"]],75,c.ov==="no"?' id="secf" hidden':' id="secf"')}
+    </div></fieldset>
+    <fieldset class="grp"><legend>Namen und Ergebnisse</legend><div class="grid">
       <div class="field"><label for="cn">Platznamen (optional, mit Komma)</label><input id="cn" data-d="cn" maxlength="120" placeholder="z. B. Center, Nord" value="${esc((c.cn||[]).join(", "))}"></div>
-      <div class="field"><label for="auto">Ergebnisse</label>${sel("auto",[["reported","Ein Spieler trägt ein, das gilt sofort"],["confirmed","Der Gegner bestätigt"],["off","Nur ich trage ein und setze an"]],c.auto)}</div>
-    </div>
-    ${est?`<p class="sum">${esc(est)}</p>`:""}
+      ${fld("auto","Ergebnisse",[["reported","Ein Spieler trägt ein, das gilt sofort"],["confirmed","Der Gegner bestätigt"],["off","Nur ich trage ein und setze an"]],c.auto)}
+    </div></fieldset>
     <p class="hint">Bei „Ein Spieler trägt ein“ gilt jedes Ergebnis sofort, die nächsten Spiele werden automatisch angesetzt. Du kannst jedes Ergebnis jederzeit ändern.</p>
-    <div class="actions">${btn("config","Einstellungen speichern")}</div></details>`;
+    <div class="actions">${btn("config","Einstellungen speichern")}</div>
+    <div id="sum" aria-live="polite"></div>
+    <details class="cmp"><summary>Dauer nach Platzzahl vergleichen</summary><div id="ptab"></div></details></details>`;
 }
+const rulesBox=()=>RULES_HTML.replace(/^\s+/,"");
 
 /* Spiele auflisten (aus dem Stand des Servers) */
 function gamesOf(){
@@ -1815,11 +1834,8 @@ const ACT={
   async kick(e){if(!await call("/admin/kick",{pid:+e.dataset.pid},"admin"))return;await refresh()},
   async release(e){if(!await call("/admin/release",{pid:+e.dataset.pid},"admin"))return;say("Zugang freigegeben. Der Spieler trägt jetzt seinen Namen erneut ein.");await refresh()},
   async config(){
-    const g=k=>val(k),lim=g("lim")==="yes",cfg={R:+g("R"),courts:+g("courts"),ov:g("ov"),lim,dur:+g("dur"),brk:+g("brk"),wu:+g("wu"),auto:g("auto"),cn:g("cn").split(",").map(x=>x.trim()).filter(Boolean).slice(0,12)};
-    if(document.querySelector('[data-d="lead"]'))cfg.lead=+g("lead");
-    if(document.querySelector('[data-d="draw"]'))cfg.draw=g("draw")==="yes";
-    const t=g("t0").trim();if(t===""||t==null)cfg.t0=null;else{const v=tparse(t);if(v==null){say("Die Startzeit bitte als hh:mm eintragen, z. B. 18:30.",true);return}cfg.t0=v}
-    if(!lim)cfg.draw=false;
+    const g=k=>val(k),lim=g("lim")==="yes",cfg={R:+g("r"),courts:+g("c"),ov:g("ov"),lead:+g("lead")||0,lim,dur:+g("dur"),brk:+g("brk"),wu:+g("wu"),draw:lim&&g("draw")==="yes",auto:g("auto"),cn:g("cn").split(",").map(x=>x.trim()).filter(Boolean).slice(0,12)};
+    const t=g("t0").trim();if(t==="")cfg.t0=null;else{const v=tparse(t);if(v==null){say("Die Startzeit bitte als hh:mm eintragen, z. B. 18:30.",true);return}cfg.t0=v}
     if(!await call("/admin/config",{cfg},"admin"))return;say("Einstellungen gespeichert.");await refresh();
   },
   async start(){disarm();if(!await call("/admin/start",{},"admin"))return;await refresh()},
@@ -1857,7 +1873,10 @@ document.addEventListener("keydown",ev=>{
   else if(/^pn\d+$/.test(k)){const b=ev.target.parentElement.querySelector("[data-act=prename]");if(b)b.click();return}
   if(a){const b=document.querySelector('[data-act="'+a+'"]');if(b)b.click()}
 });
-document.addEventListener("change",ev=>{const k=ev.target&&ev.target.dataset&&ev.target.dataset.d;if(k==="ov"||k==="lim"||k==="R"||k==="courts"||k==="dur"||k==="brk")paintPanels()});
+document.addEventListener("change",ev=>{
+  const e=ev.target;if(!e||!e.closest||!e.closest("details.cfg"))return;const k=e.dataset&&e.dataset.d;
+  try{if(k==="lim")limChange();else if(k==="t0")fixT0(e);else if(["r","c","ov","lead","dur","draw","brk","wu","sec"].includes(k))syncSetup()}catch(x){}
+});
 document.addEventListener("toggle",ev=>{const d=ev.target;if(d&&d.dataset&&d.dataset.k){d.open?OPEN.add(d.dataset.k):OPEN.delete(d.dataset.k)}},true);
 
 window.__online={poll:()=>poll(true),state:()=>({CODE,D,TOK}),route};

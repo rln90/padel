@@ -57,19 +57,21 @@ ok(P.Anna.$$('[data-act=start]').length===0&&A.$('[data-act=arm][data-key=start]
 
 /* Name ändern (Spieler), Organisator ändert Namen */
 P.Emil.type('#renIn','Emilia');await P.Emil.click('[data-act=rename]');await A.poll();
-ok(A.text('.plist').includes('Emilia'),'Spieler ändert eigenen Namen');
+ok(A.$$('.plist input').some(i=>i.value==='Emilia'),'Spieler ändert eigenen Namen');
 A.type('[data-d=pn'+P.Dora.st().TOK.pid+']','Dorothea');await A.click('[data-act=prename][data-pid="'+P.Dora.st().TOK.pid+'"]');await P.Dora.poll();
 ok(P.Dora.text('.plist').includes('Dorothea'),'Organisator ändert Spielernamen');
 
 /* Einstellungen */
 A.$('details.cfg').open=true;
-A.type('#R','3');A.type('#courts','2');A.type('#ov',MODE);await A.settle();
-ok(MODE!=='yes'||A.$('#lead'),'Vorsprung-Auswahl nur bei „sofort weiter“');
+A.type('#r','4');A.type('#c','2');A.type('#ov',MODE);await A.settle();
+ok(A.$('#leadf').hidden===(MODE!=='yes'),'Vorsprung-Auswahl nur bei „sofort weiter“');
+ok(/Jeder spielt \d+-mal/.test(A.text('#sum'))&&A.$$('#sum table tbody tr').length>0,'Zusammenfassung und Buchungstabelle (60/90/120) erscheinen');
+ok(JSON.stringify([...A.$('#r').options].map(o=>+o.value))===JSON.stringify(A.w.eval('roundOpts(6)')),'Rundenauswahl entspricht den gültigen Werten');
 A.type('#lim','no');await A.settle();
-ok(!A.$('#draw'),'Ohne Zeitlimit kein Unentschieden-Feld');
-A.type('#lim','yes');await A.settle();ok(!!A.$('#draw'),'Mit Zeitlimit wieder da');
-A.type('#t0','25:99');await A.click('[data-act=config]');
-ok(/hh:mm/.test(A.text('#onlmsg')),'Ungültige Startzeit abgelehnt');
+ok(A.$('#draw').disabled&&A.$('#draw').value==='no'&&A.$('#dur').value==='40','Ohne Zeitlimit: Unentschieden gesperrt, Dauer 40');
+A.type('#lim','yes');await A.settle();ok(!A.$('#draw').disabled&&A.$('#dur').value==='20','Mit Zeitlimit wieder frei');
+A.type('#t0','25:99');await A.settle();
+ok(A.$('#t0').value==='','Ungültige Startzeit wird geleert (wie in der Offline-Einrichtung)');
 A.type('#t0','18:30');A.type('#cn','Center, Nord');await A.click('[data-act=config]');await A.settle(8);
 ok(/gespeichert/.test(A.text('#onlmsg')),'Einstellungen gespeichert');
 await P.Anna.poll();
