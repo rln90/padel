@@ -321,7 +321,7 @@ async function call(path,body,mode){
   if(r.net){say("Keine Verbindung. Bitte noch einmal versuchen.",true);return null}
   if(!r.j.ok){
     if(r.status===401&&!admin){TOK.p=null;TOK.pid=null;saveTok();say("Dein Zugang gilt nicht mehr. Bitte neu beitreten oder den Organisator um Freigabe bitten.",true);ver=-1;poll(true);return null}
-    say(r.j.msg||"Das hat nicht geklappt.",true);if(r.status===409)poll(true);return null}
+    say(r.j.msg||"Das hat nicht geklappt.",true);if(r.status===409||r.status===404)poll(true);return null}
   say(null);return r.j;
 }
 async function refresh(){clearTimeout(pollT);await poll(true)}
