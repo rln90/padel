@@ -5,6 +5,7 @@
 const fs=require('fs'),path=require('path');
 const root=path.join(__dirname,'..');
 const rd=f=>fs.readFileSync(path.join(root,f),'utf8');
+const qr=rd('src/vendor/qrcode.min.js');
 const tpl=rd('src/template.html'),eng=rd('src/engine.js'),ui=rd('src/ui.js'),onl=rd('src/online.js'),css=rd('src/online.css');
 function fill(h,o){
   for(const k of Object.keys(o)){if(!h.includes(k))throw new Error('Marker fehlt: '+k);h=h.replace(k,()=>o[k])}
@@ -14,7 +15,7 @@ const trim=t=>t.replace(/\s+$/,'');
 const offline=fill(tpl,{'/*@@ENGINE@@*/':trim(eng),'/*@@UI@@*/':trim(ui),'/*@@CSS@@*/':'','<!--@@TOP@@-->':'','<!--@@BOT@@-->':''});
 const online=fill(tpl,{
   '/*@@ENGINE@@*/':trim(eng),
-  '/*@@UI@@*/':trim(ui)+'\n'+trim(onl),
+  '/*@@UI@@*/':trim(qr)+'\n'+trim(ui)+'\n'+trim(onl),
   '/*@@CSS@@*/':trim(css),
   '<!--@@TOP@@-->':'<div id="onl"></div>',
   '<!--@@BOT@@-->':'<div id="onl2"></div>',

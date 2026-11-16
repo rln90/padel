@@ -58,3 +58,6 @@ Geprüft in `wrangler dev` (workerd, lokal): vollständiges Turnier mit 8 Spiele
 | Prüfung | `npm run test:csp` (Browser gegen `wrangler dev`): eigene Seite ohne CSP-Verstöße, fremde Skripte und Verbindungen blockiert |
 
 Grenzen: Die CSP erlaubt `'unsafe-inline'` für Skripte, weil die Oberfläche Inline-Handler nutzt. Schutz gegen eingeschleusten Code bietet vor allem das durchgängige Escapen aller Namen. Der Limiter-Zustand liegt nur im Arbeitsspeicher und beginnt nach einem Neustart der Instanz von vorn. Teilen sich mehrere Personen eine IP (z. B. WLAN vor Ort), teilen sie sich auch die Grenzen beim Anlegen.
+
+## QR-Code für den Spielerlink
+Im Warteraum steht unter dem Spielerlink ein QR-Code, später im Organisator-Bereich unter „QR-Code für Spieler“. Er wird auf der Seite selbst erzeugt (Bibliothek `src/vendor/qrcode.min.js`, MIT, kein externer Dienst), immer schwarz auf weiß mit Ruhezone, auch im dunklen Modus. `npm run test:qr` liest den gerenderten Code mit einem Scanner (jsQR) aus und vergleicht ihn mit dem Spielerlink.
