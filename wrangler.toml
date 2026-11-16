@@ -1,4 +1,4 @@
-# Cloudflare Worker für das Padel-Turnier (Phase 1: nur Server). Phase 3 beschreibt die Einrichtung Schritt für Schritt.
+# Cloudflare Worker für das Padel-Turnier. Einrichtung: siehe docs/EINRICHTUNG.md
 name = "padel-turnier"
 main = "server/worker.mjs"
 compatibility_date = "2025-09-01"
@@ -18,3 +18,8 @@ new_sqlite_classes = ["TournamentDO"]
 
 # Geheimnisse (nicht hier eintragen, sondern im Cloudflare-Dashboard unter Einstellungen > Variablen und Geheimnisse):
 #   CREATE_KEY = beliebiges langes Passwort. Nur wer es kennt, darf Turniere anlegen.
+
+# Vorschauen pro Pull Request (Cloudflare Worker Previews, Workflow .github/workflows/preview.yml).
+# Jede Vorschau bekommt eigenen Speicher. Der Schlüssel gilt nur dort und ist bewusst nicht geheim.
+[previews.vars]
+CREATE_KEY = "vorschau"
