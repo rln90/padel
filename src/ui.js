@@ -201,6 +201,16 @@ function fillWait(n,R,dur,brk,draw,mx){
   setTimeout(next,0);
 }
 const fc=t=>{const h=Math.floor(t/60),m=t%60;return h+":"+String(m).padStart(2,"0")+" h"};
+const RULES_HTML=`<details class="rules"><summary>Spielregeln</summary><ul>
+        <li>Wertung: Sieg 3 Punkte, Unentschieden 1 Punkt (nur wenn erlaubt), Niederlage 0. Das Ergebnis wird in Games eingetragen, bei Zeitlimit zählt der Stand nach Ablauf.</li>
+        <li>Platzierung: Punkte, dann Direktvergleich, Game-Differenz, Buchholz (Punkte der Gegner), Siege, erzielte Games. Sind 2 bis 4 Spieler bei den Plätzen 1 bis 3 punktgleich, spielen sie am Ende Entscheidungsspiele jeder gegen jeden.</li>
+        <li>Paarung: Runde 1 wird ausgelost. Ab Runde 2 wird nach Tabelle gepaart, bevorzugt Spieler mit benachbarten Plätzen (1. gegen 2., 3. gegen 4. usw.), und ohne Wiederholungen, solange das möglich ist. Dafür zählen Punkte, Game-Differenz, Siege und erzielte Games.</li>
+        <li>Bei ungerader Spielerzahl pausiert pro Runde möglichst, wer bisher am seltensten pausiert hat, davon der Tabellenletzte. Bei Gleichstand und in Runde 1 entscheidet das Los.</li>
+        <li>Nach jeder zweiten Runde spielen die beiden Pausierenden ein Zusatzspiel, damit am Ende alle gleich viele Spiele haben.</li>
+        <li>Scheidet ein Spieler aus, zählen seine bisherigen Spiele für die Gegner weiter. Wer dadurch ein Spiel verliert, bekommt ein Ausgleichsspiel. Fehlt am Ende noch jemandem ein Spiel, spielt er ein Zusatzspiel gegen einen tabellenähnlichen Gegner. Es zählt nur für ihn, nicht für den Gegner.</li>
+        <li>Ohne Überlappung: Spiele laufen gleichzeitig, soweit Plätze frei sind. Eine neue Runde beginnt erst, wenn alle Ergebnisse vorliegen. Ein Zusatzspiel startet nach dem regulären Spiel des Spielers, der in der Vorrunde pausiert hat.</li>
+        <li>Mit Überlappung: Ein Spiel beginnt, sobald ein Platz frei ist und die Spieler bereit sind, auch wenn die Vorrunde noch läuft. Gepaart werden bevorzugt Spieler mit gleich vielen bisherigen Spielen, nach Tabelle. Bei „Ja, sofort weiter“ kennt die Paarung nicht den Stand der laufenden Spiele, Wiederholungsspiele lassen sich seltener vermeiden. Bei „Ja, Platzierung abwarten“ wird ein Spiel erst angesetzt, wenn laufende Spiele die Platzierung der beiden Spieler nicht mehr verändern können. Ein Platz bleibt dafür manchmal kurz frei, Wiederholungsspiele werden dabei möglichst vermieden. Die Vorsprung-Grenze (nur „sofort weiter“) hält die Spielzahlen enger beieinander.</li>
+      </ul></details>`;
 function syncSetup(){
   const n=+$("#n").value,sel=$("#r"),cur=validR(n,+sel.value||4);
   sel.innerHTML=roundOpts(n).map(r=>`<option value="${r}"${r===cur?" selected":""}>${r} Runden</option>`).join("");
@@ -328,16 +338,7 @@ function render0(){
       <details class="cmp"><summary>Dauer nach Platzzahl vergleichen</summary><div id="ptab"></div></details>
       <details class="names"><summary>Namen für Spieler und Plätze (optional) <span id="ns" class="meta"></span></summary><div id="nf"></div></details>
       <div class="actions"><button onclick="start()">Turnier starten</button></div>
-      <details class="rules"><summary>Spielregeln</summary><ul>
-        <li>Wertung: Sieg 3 Punkte, Unentschieden 1 Punkt (nur wenn erlaubt), Niederlage 0. Das Ergebnis wird in Games eingetragen, bei Zeitlimit zählt der Stand nach Ablauf.</li>
-        <li>Platzierung: Punkte, dann Direktvergleich, Game-Differenz, Buchholz (Punkte der Gegner), Siege, erzielte Games. Sind 2 bis 4 Spieler bei den Plätzen 1 bis 3 punktgleich, spielen sie am Ende Entscheidungsspiele jeder gegen jeden.</li>
-        <li>Paarung: Runde 1 wird ausgelost. Ab Runde 2 wird nach Tabelle gepaart, bevorzugt Spieler mit benachbarten Plätzen (1. gegen 2., 3. gegen 4. usw.), und ohne Wiederholungen, solange das möglich ist. Dafür zählen Punkte, Game-Differenz, Siege und erzielte Games.</li>
-        <li>Bei ungerader Spielerzahl pausiert pro Runde möglichst, wer bisher am seltensten pausiert hat, davon der Tabellenletzte. Bei Gleichstand und in Runde 1 entscheidet das Los.</li>
-        <li>Nach jeder zweiten Runde spielen die beiden Pausierenden ein Zusatzspiel, damit am Ende alle gleich viele Spiele haben.</li>
-        <li>Scheidet ein Spieler aus, zählen seine bisherigen Spiele für die Gegner weiter. Wer dadurch ein Spiel verliert, bekommt ein Ausgleichsspiel. Fehlt am Ende noch jemandem ein Spiel, spielt er ein Zusatzspiel gegen einen tabellenähnlichen Gegner. Es zählt nur für ihn, nicht für den Gegner.</li>
-        <li>Ohne Überlappung: Spiele laufen gleichzeitig, soweit Plätze frei sind. Eine neue Runde beginnt erst, wenn alle Ergebnisse vorliegen. Ein Zusatzspiel startet nach dem regulären Spiel des Spielers, der in der Vorrunde pausiert hat.</li>
-        <li>Mit Überlappung: Ein Spiel beginnt, sobald ein Platz frei ist und die Spieler bereit sind, auch wenn die Vorrunde noch läuft. Gepaart werden bevorzugt Spieler mit gleich vielen bisherigen Spielen, nach Tabelle. Bei „Ja, sofort weiter“ kennt die Paarung nicht den Stand der laufenden Spiele, Wiederholungsspiele lassen sich seltener vermeiden. Bei „Ja, Platzierung abwarten“ wird ein Spiel erst angesetzt, wenn laufende Spiele die Platzierung der beiden Spieler nicht mehr verändern können. Ein Platz bleibt dafür manchmal kurz frei, Wiederholungsspiele werden dabei möglichst vermieden. Die Vorsprung-Grenze (nur „sofort weiter“) hält die Spielzahlen enger beieinander.</li>
-      </ul></details>
+      ${RULES_HTML}
       <details class="rules"><summary>Handhabung</summary><ul>
         <li>Einrichten: Spieler, Runden, Plätze und Modus wählen. Namen für Spieler und Plätze sind optional, leere Felder heißen A, B, C … bzw. Platz 1, Platz 2 … Eine Liste mit Komma oder Zeilenumbruch lässt sich in ein Feld einfügen. Mit Startzeit (Beginn der Platzbuchung) und Aufwärmen zeigt der Spielplan Uhrzeiten, das Aufwärmen liegt am Anfang der Buchung.</li>
         <li>Buchung: Unter den Einstellungen steht, wie lange jeder Platz gebucht werden sollte. Bei überlappenden Runden wird das aus simulierten Turnieren berechnet. „Buchungssicherheit“ legt fest, wie oft die Buchung reichen soll (Abwarten: Knapp ca. 50 %, Normal ca. 75 %, Sicher ca. 95 % der simulierten Turniere. Sofort weiter: Knapp ohne, Normal mit einem, Sicher mit zwei Zeitblöcken Reserve). Der Vergleich nach Platzzahl zeigt dieselbe Rechnung für andere Platzzahlen.</li>

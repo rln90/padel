@@ -25,7 +25,7 @@ for(const [i,nm] of names.entries()){
 await A.fill('#nameIn','Robin');await A.click('[data-act=join]');await A.waitForSelector('text=Du bist dabei');
 await A.waitForFunction(()=>document.querySelectorAll('.plist li').length===8,null,{timeout:15000});
 ok(true,'8 Spieler im Warteraum');
-await A.click('details.cfg summary');await A.selectOption('#R','4');await A.selectOption('#ov','yes');await A.selectOption('#courts','3');await A.fill('#t0','18:30');
+await A.click('details.cfg summary');await A.selectOption('#r','4');await A.selectOption('#ov','yes');await A.selectOption('#c','3');await A.fill('#t0','18:30');
 await A.click('[data-act=config]');await A.waitForSelector('text=gespeichert');
 await shot(A,'4-config',true);
 await A.click('[data-act=arm][data-key=start]');await A.click('[data-act=start]');
@@ -45,12 +45,12 @@ while(guard++<300){
       const txt=(await r.textContent());if(/Eintragen/.test(txt)&&!/Gemeldet|Bestätigt|Vom Organisator/.test(txt)&&(await ins[0].inputValue())===''){
         if(rnd()<.5)continue; // ab und zu trägt der Gegner ein
         let a=6,b=Math.floor(rnd()*6);if(rnd()<.5)[a,b]=[b,a];
-        await ins[0].fill(String(a));await ins[1].fill(String(b));await btn.click();entered++;did=true;break}}
+        try{await ins[0].fill(String(a));await ins[1].fill(String(b));await btn.click({timeout:3000});entered++;did=true}catch(e){/* Seite wurde gerade aktualisiert: später erneut */}break}}
   }
   if(!did){ // Organisator trägt ein, was offen ist
     const rows=await A.$$('.adm .matches .mw');let any=false;
     for(const r of rows){const ins=await r.$$('input'),btn=await r.$('[data-act=asave]');if(!btn||ins.length<2)continue;
-      if((await ins[0].inputValue())===''){await ins[0].fill('6');await ins[1].fill(String(Math.floor(rnd()*6)));await btn.click();entered++;any=true;break}}
+      if((await ins[0].inputValue())===''){await ins[0].fill('6');await ins[1].fill(String(Math.floor(rnd()*6)));try{await btn.click({timeout:3000});entered++;any=true}catch(e){}break}}
     if(!any){const b=await A.$('[data-act=assign]');if(b)await b.click()}
   }
   await A.waitForTimeout(150);
