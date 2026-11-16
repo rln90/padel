@@ -30,3 +30,11 @@ body.onl-me .mine>label,body.onl-me .mine>select{display:none}
 .pn.sub{font-size:13px}
 .qrbox{text-align:center;margin:10px 0 14px}
 .qr{display:block;width:min(100%,260px);height:auto;margin:0 auto 6px;border-radius:8px;border:1px solid var(--line,#d6dbe3)}
+.newgame{display:flex;gap:10px;align-items:center;justify-content:space-between;background:color-mix(in srgb,var(--court) 12%,var(--paper));border:1px solid var(--line);border-left:4px solid var(--court);border-radius:8px;padding:10px 12px;margin:8px 0}
+.newgame button{flex:0 0 auto}
+.stand{margin:6px 0 10px;font-size:15px}
+.mylist{list-style:none;margin:6px 0 0;padding:0}
+.mylist li{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:8px 0;border-top:1px solid var(--line)}
+.mylist .mt{grid-column:1/-1;font-size:13px;opacity:.75}
+.mylist .mr{text-align:right}
+.panel.final .sum{margin:4px 0 10px}

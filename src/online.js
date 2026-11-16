@@ -14,6 +14,8 @@ function saveTok(){if(!CODE)return;const s=JSON.stringify(TOK);mem[CODE]=JSON.pa
 function dropTok(c){delete mem[c];try{localStorage.removeItem(tokKey(c))}catch(e){}}
 const isAdm=()=>!!(D&&D.role==="admin");
 const myIdx=()=>D&&TOK.pid!=null?D.players.findIndex(p=>p.id===TOK.pid):-1;
+/* Hinweis auf ein neu angesetztes eigenes Spiel: SEEN = schon bekannte offene Spiele (Spielnummern), NEWG = Spiel, auf das hingewiesen wird */
+let SEEN=null,SEENCODE=null,NEWG=null;const TITLE0=document.title;
 const pname=id=>{const p=D&&D.players.find(p=>p.id===id);return p?p.name:"?"};
 const origin=()=>location.origin&&location.origin!=="null"?location.origin:"";
 const playerLink=()=>origin()+"/#"+CODE;
@@ -104,15 +106,29 @@ function paintViewer(){
     app.hidden=false;render();
   }else{app.hidden=true;app.innerHTML="";lb.innerHTML="";q("#tl").textContent="Einzel im Schweizer System"}
 }
+function trackNew(){
+  if(SEENCODE!==CODE){SEEN=null;SEENCODE=CODE;NEWG=null}
+  const mi=D?myIdx():-1;
+  if(!D||mi<0||D.players[mi].out||D.status==="finished"){NEWG=null;if(!D||D.status!=="lobby")SEEN=null;titleNew();return}
+  if(D.status==="lobby"){SEEN=new Set();NEWG=null;titleNew();return}
+  const cur=gamesOf().filter(g=>(g.m.a===mi||g.m.b===mi)&&!done(g.m)).map(g=>g.m.gid);
+  if(SEEN===null)SEEN=new Set(cur); /* erster Stand nach dem Laden: kein Hinweis */
+  const fresh=cur.filter(id=>!SEEN.has(id));
+  cur.forEach(id=>SEEN.add(id));
+  if(fresh.length){NEWG=fresh[0];try{if(navigator.vibrate)navigator.vibrate([200,100,200])}catch(e){}}
+  if(NEWG!==null&&!cur.includes(NEWG))NEWG=null;
+  titleNew();
+}
+function titleNew(){try{document.title=NEWG!==null?"● Dein Spiel · "+TITLE0:TITLE0}catch(e){}}
 function paintPanels(){
-  syncS();
+  syncS();trackNew();
   keepDrafts(()=>{
     const a=q("#onl"),b=q("#onl2");
     let top='<div id="onlmsg" class="onlmsg" role="status" aria-live="polite" hidden></div>',bot="";
     if(!CODE)top+=landing();
     else if(!D)top+='<p class="hint wait0">Lädt …</p>';
     else if(D.status==="lobby")top+=lobby();
-    else{top+=playerPanel()+adminPanel();bot=bottom()+`<section class="panel">${rulesBox()}</section>`}
+    else{top+=finalPanel()+playerPanel()+adminPanel();bot=bottom()+`<section class="panel">${rulesBox()}</section>`}
     a.innerHTML=top;b.innerHTML=bot;paintFlash();
   });
   if(D&&D.status==="lobby"&&isAdm()&&q("#sum")){try{syncSetup()}catch(e){}}
@@ -260,10 +276,14 @@ function gameRow(g,o){
 function playerPanel(){
   const mi=myIdx();
   if(mi<0)return claimPanel();
-  if(D.players[mi].out)return`<section class="panel"><h2>Du bist ausgeschieden</h2><p class="hint">Deine bisherigen Spiele zählen weiter. Danke fürs Mitspielen.</p></section>`;
+  if(D.players[mi].out)return`<section class="panel"><h2>Du bist ausgeschieden</h2><p class="hint">Deine bisherigen Spiele zählen weiter. Danke fürs Mitspielen.</p>${standLine(mi)}</section>`;
   const G=gamesOf().filter(g=>g.m.a===mi||g.m.b===mi);
   const open=G.filter(g=>!done(g.m)),last=G.filter(g=>done(g.m)).slice(-1)[0];
   let h=`<section class="panel mygame"><div class="head"><h2>Dein Spiel</h2><span class="meta">${esc(D.players[mi].name)}</span></div>`;
+  const ng=NEWG!==null?open.find(g=>g.m.gid===NEWG):null;
+  if(ng){const nx=nextOf(mi),opp=S.names[ng.m.a===mi?ng.m.b:ng.m.a],where=nx&&nx.k!=null?" · "+cname(nx.k)+(T0()!=null?" ab "+tt(nx.i,S.dur+S.brk):""):"";
+    h+=`<div class="newgame" role="alert"><span><b>Dein nächstes Spiel steht.</b> Gegen ${esc(opp)}${esc(where)}</span>${btn("seen","OK",{q:true})}</div>`}
+  h+=standLine(mi);
   if(open.length){
     const nx=nextOf(mi);
     h+=open.map((g,i)=>{const opp=S.names[g.m.a===mi?g.m.b:g.m.a];
@@ -278,7 +298,35 @@ function playerPanel(){
     const extra=other&&D.cfg.auto==="confirmed"?btn("confirm","Stimmt",{q:true,attr:'data-gid="'+last.m.gid+'"'})+btn("dispute","Stimmt nicht",{q:true,attr:'data-gid="'+last.m.gid+'"'}):"";
     h+=`<details class="lastg" data-k="last"${OPEN.has("last")||other||(r&&r.st==="disputed")?" open":""}><summary>Letztes Ergebnis${last.locked?"":" (änderbar)"}</summary>${gameRow(last,{extra})}</details>`;
   }
+  if(G.length)h+=`<details class="lastg" data-k="mine"${OPEN.has("mine")?" open":""}><summary>Meine Spiele (${G.length})</summary>${myGames(mi,G)}</details>`;
   return h+"</section>";
+}
+/* Mein Platz in der Tabelle */
+function standLine(mi){
+  let st;try{st=ranking()}catch(e){return""}
+  const me=st.find(x=>x.i===mi);if(!me)return"";
+  if(!me.g)return`<p class="stand">Noch kein Spiel gespielt.</p>`;
+  return`<p class="stand"><b>Platz ${me.rk} von ${st.length}</b> · ${me.p} ${me.p===1?"Punkt":"Punkte"} · ${me.w} ${me.w===1?"Sieg":"Siege"}, ${me.l} ${me.l===1?"Niederlage":"Niederlagen"}${S.draw&&me.d?", "+me.d+" unentschieden":""} · Games ${me.gf}:${me.ga}</p>`;
+}
+/* Alle eigenen Spiele mit Gegner und Ergebnis */
+function myGames(mi,G){
+  return`<ul class="mylist">${G.map(g=>{
+    const m=g.m,iA=m.a===mi,opp=S.names[iA?m.b:m.a];
+    let res;
+    if(done(m)){const a=iA?m.sa:m.sb,b=iA?m.sb:m.sa;res=`<b>${a}:${b}</b> ${a>b?"Sieg":a<b?"Niederlage":"Unentschieden"}`+(m.h&&!iA?" (zählt nur für "+esc(S.names[m.a])+")":"")}
+    else res="offen"+(g.k!=null?" · "+esc(cname(g.k)):"");
+    return`<li><span class="mt">${esc(g.tag)}</span><span>gegen ${esc(opp)}</span><span class="mr">${res}</span></li>`}).join("")}</ul>`;
+}
+/* Endstand mit Teilen-Knopf */
+function finalText(){
+  const st=ranking(),url=location.origin+location.pathname+"#"+CODE;
+  return"Padel-Turnier, Endstand\n"+st.map(s=>`${s.rk}. ${s.nm}: ${s.p} Pkt, ${s.gf}:${s.ga} Games (${sgn(s.gf-s.ga)})`).join("\n")+"\nAlle Ergebnisse (7 Tage abrufbar): "+url;
+}
+function finalPanel(){
+  if(!D||D.status!=="finished")return"";
+  let st;try{st=ranking()}catch(e){return""}
+  const top=st.filter(s=>s.rk<=3).map(s=>`${s.rk}. ${esc(s.nm)} (${s.p} Pkt)`).join(" · ");
+  return`<section class="panel final"><h2>Turnier beendet</h2><p class="sum">${top}</p><div class="actions">${btn("share","Endstand teilen")}</div></section>`;
 }
 function claimPanel(){
   const adm=isAdm();
@@ -406,6 +454,13 @@ const ACT={
   async assign(){const r=await call("/admin/assign",{},"admin");if(!r)return;say(r.assigned?"Neue Spiele angesetzt.":"Es gibt gerade nichts anzusetzen.");await refresh()},
   async undo(){disarm();if(!await call("/admin/undo",{confirm:true},"admin"))return;await refresh()},
   async end(){disarm();if(!await call("/admin/end",{confirm:true},"admin"))return;dropTok(CODE);CODE=null;D=null;TOK={p:null,a:null,pid:null};gen++;clearTimeout(pollT);history.replaceState(null,"","#");say("Das Turnier wurde gelöscht.");paintAll()},
+  seen(){NEWG=null;titleNew();paintAll()},
+  async share(){
+    let t;try{t=finalText()}catch(e){say("Der Endstand konnte nicht erstellt werden.",true);return}
+    try{if(navigator.share){await navigator.share({title:"Padel-Turnier, Endstand",text:t});return}}catch(e){if(e&&e.name==="AbortError")return}
+    let ok=false;try{await navigator.clipboard.writeText(t);ok=true}catch(e){}
+    if(ok)say("Endstand kopiert. Jetzt in einen Chat einfügen.");else say("Kopieren ist hier nicht möglich. Bitte die Tabelle markieren und kopieren.",true);
+  },
   async copy(e){
     const t=e.dataset.text||"";let ok=false;
     try{await navigator.clipboard.writeText(t);ok=true}catch(x){}

@@ -10,7 +10,7 @@
     "test:server": "node tools/build-server.js --check && node tests/server/functional.test.mjs && node tests/server/sim.test.mjs 80 && node tests/server/fuzz.test.mjs 40",
     "build:check": "node tools/build.js --check",
     "dev": "wrangler dev --local --port 8787 --var CREATE_KEY:geheim",
-    "test:online": "node tests/online/ui-online.test.mjs yes && node tests/online/ui-online.test.mjs no && node tests/online/ui-online.test.mjs wait",
+    "test:online": "node tests/online/ui-online.test.mjs yes && node tests/online/ui-online.test.mjs no && node tests/online/ui-online.test.mjs wait && node tests/online/ui-komfort.test.mjs",
     "test:e2e": "node tests/online/e2e.mjs",
     "test:audit": "node tests/online/audit.mjs",
     "test:csp": "node tests/online/csp.mjs",
