@@ -1,6 +1,8 @@
 // Test-Harness: Worker und Durable Object in Node, mit nachgebautem Speicher (kein Cloudflare nötig).
 import worker,{TournamentDO,LimiterDO} from '../../server/worker.mjs';
 
+// Das Fehlerprotokoll des Servers soll die Testausgabe nicht füllen (mit PADEL_LOGS=1 sichtbar)
+if(!process.env.PADEL_LOGS){console.warn=()=>{};console.error=()=>{}}
 export function seeded(seed){return()=>{seed=(seed+0x6D2B79F5)>>>0;let t=seed;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
 
 export function makeEnv(opts={}){

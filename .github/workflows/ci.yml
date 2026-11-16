@@ -1,0 +1,64 @@
+name: Tests
+
+# Läuft bei jedem Pull Request und bei jedem Stand auf main.
+# schnell: Prüfung, ob die gebauten Dateien zum Quellcode passen, Server- und Oberflächentests (ohne Browser).
+# browser: echter Chromium gegen einen lokalen Worker (wrangler dev): Ablauf, Sicherheits-Header, QR-Code, Sicherung, Generalprobe.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  schnell:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Gebaute Dateien aktuell?
+        run: node tools/build.js --check && node tools/build-server.js --check
+      - name: Server (Funktion, Simulation, Fuzz)
+        run: npm run test:server
+      - name: Oberfläche online (jsdom)
+        run: npm run test:online
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Browser installieren
+        run: |
+          npm install --no-save playwright@1.63.0
+          npx playwright install --with-deps chromium
+      - name: Lokalen Worker starten
+        run: |
+          npx wrangler dev --local --port 8787 --var CREATE_KEY:geheim > wrangler.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf localhost:8787/api/health && break; sleep 1; done
+          curl -sf localhost:8787/api/health
+      - name: Browser-Tests
+        run: |
+          set -e
+          for t in e2e audit csp qr backup generalprobe; do
+            echo "== $t"
+            node tests/online/$t.mjs
+          done
+      - name: Protokoll des Workers bei Fehlern anzeigen
+        if: failure()
+        run: tail -n 80 wrangler.log

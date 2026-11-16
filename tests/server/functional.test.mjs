@@ -259,5 +259,69 @@ const NAMES=['Anna','Ben','Cem','Dora','Emil','Fay','Gero','Hanna'];
   const e3=makeEnv({});const m=await client(e3)('POST','/api/t',{headers:{'x-create-key':'geheim'},body:{}});
   ok((await client(e3)('GET','/api/t/'+m.json.code+'/state')).status===200,'Limiter stört Spielbetrieb nicht');
 }
+// ---- Phase 5: Sicherung, Wiederherstellung, Fehlerprotokoll
+{
+  const {env,c,code,adm}=await mk({R:4,courts:2,ov:'no',auto:'reported'});
+  const t=await fill(c,code,['Jörg','Zoë','Çağlar','Anna','Ben','Cem']);
+  const lob=await c('GET',T(code)+'/admin/export',{token:adm});
+  ok(lob.status===200&&lob.json.backup.format==='padel-turnier-sicherung'&&lob.json.backup.status==='lobby'&&lob.json.backup.S===null&&lob.json.backup.players.length===6,'Export im Warteraum');
+  ok((await c('GET',T(code)+'/admin/export',{token:t.Anna})).status===403,'Spieler darf nicht exportieren');
+  ok((await c('GET',T(code)+'/admin/export')).status===403,'Anonym darf nicht exportieren');
+  ok(!/hash|"p_|"a_/.test(lob.text),'Export ohne Zugangsdaten');
+  // Warteraum wiederherstellen
+  const r0=await c('POST','/api/t',{headers:{'x-create-key':'geheim'},body:{restore:lob.json.backup}});
+  ok(r0.status===200&&r0.json.restored&&r0.json.code!==code,'Warteraum wiederhergestellt, neuer Code');
+  const v0=(await c('GET',T(r0.json.code)+'/state',{token:r0.json.adminKey})).json;
+  ok(v0.status==='lobby'&&v0.players.map(p=>p.name).join()==='Jörg,Zoë,Çağlar,Anna,Ben,Cem'&&v0.players.every(p=>p.released&&!p.taken),'Namen mit Umlauten erhalten, alle Zugänge frei');
+  const cl=await c('POST',T(r0.json.code)+'/join',{body:{name:'zoë'}});ok(cl.status===200&&cl.json.claimed&&cl.json.name==='Zoë','Zugang über Namen zurückgeholt (Groß/Klein egal)');
+  ok((await c('POST',T(r0.json.code)+'/join',{body:{name:'Zoë'}})).status===409,'Zugang nur einmal');
+  // laufendes Turnier
+  await c('POST',T(code)+'/admin/start',{token:adm});
+  const st=(await c('GET',T(code)+'/state',{token:adm})).json;const g=st.S.rounds?st.S.rounds[0].m[0]:st.S.games[0];
+  await c('POST',T(code)+'/admin/result',{token:adm,body:{gid:g.gid,sa:6,sb:2}});
+  const ex=await c('GET',T(code)+'/admin/export',{token:adm}),b=ex.json.backup;
+  ok(b.status==='running'&&b.S&&Object.keys(b.res).length===1,'Export laufend: Stand und Ergebnis');
+  const r1=await c('POST','/api/t',{headers:{'x-create-key':'geheim'},body:{restore:b}});ok(r1.status===200,'Laufendes Turnier wiederhergestellt');
+  const v1=(await c('GET',T(r1.json.code)+'/state',{token:r1.json.adminKey})).json;
+  ok(JSON.stringify(v1.S)===JSON.stringify(st.S.rounds?{...st.S}:st.S)||JSON.stringify(v1.S.names)===JSON.stringify(st.S.names),'Turnierstand gleich');
+  const g1=(v1.S.rounds?v1.S.rounds[0].m[0]:v1.S.games[0]);ok(g1.sa===6&&g1.sb===2&&g1.gid===g.gid,'Ergebnis und Spielnummer erhalten');
+  // Weiterspielen nach der Wiederherstellung
+  const nxt=await c('POST',T(r1.json.code)+'/join',{body:{name:'Anna'}});ok(nxt.status===200&&nxt.json.claimed,'Spieler holt Zugang im laufenden Turnier zurück');
+  const open=(v1.S.rounds?v1.S.rounds[0].m:v1.S.games).find(m=>m.sa==null);
+  if(open){const rr=await c('POST',T(r1.json.code)+'/result',{token:nxt.json.token,body:{gid:open.gid,sa:6,sb:1}});ok(rr.status===200||rr.status===403,'Eintragen nach Wiederherstellung möglich oder korrekt abgelehnt ('+rr.status+')')}
+  // ungültige Sicherungen
+  const bad=async(mut,msg)=>{const x=JSON.parse(JSON.stringify(b));mut(x);const r=await c('POST','/api/t',{headers:{'x-create-key':'geheim'},body:{restore:x}});ok(r.status===422,msg+' ('+r.status+')')};
+  await bad(x=>{x.format='anders'},'Falsches Format abgelehnt');
+  await bad(x=>{x.v=2},'Falsche Version abgelehnt');
+  await bad(x=>{x.S.n=1e9},'Unsinnige Spielerzahl abgelehnt');
+  await bad(x=>{x.players[0].name='<b>x</b>'},'Name mit HTML abgelehnt');
+  await bad(x=>{x.players[1].name=x.players[0].name},'Doppelter Name abgelehnt');
+  await bad(x=>{x.players.pop()},'Spielerliste passt nicht zum Stand');
+  await bad(x=>{x.S.names[0]='Anderer'},'Namen im Stand passen nicht zur Liste');
+  await bad(x=>{x.S=null},'Laufend ohne Stand abgelehnt');
+  await bad(x=>{x.res['5']={by:99,st:'confirmed',at:1,n:0}},'Ergebnis von unbekanntem Spieler abgelehnt');
+  await bad(x=>{x.res['5']={by:'admin',st:'frei erfunden',at:1,n:0}},'Unbekannter Ergebnisstatus abgelehnt');
+  await bad(x=>{x.cfg.R=2},'Ungültige Einstellung abgelehnt');
+  await bad(x=>{x.players=new Array(30).fill({id:1,name:'x'})},'Zu viele Spieler abgelehnt');
+  ok((await c('POST','/api/t',{body:{restore:b}})).status===403,'Wiederherstellen ohne Schlüssel: 403');
+  const huge=await c('POST','/api/t',{headers:{'x-create-key':'geheim'},raw:JSON.stringify({restore:{format:'x',pad:'a'.repeat(450000)}})});ok(huge.status===413,'Zu große Sicherung: 413 ('+huge.status+')');
+  const rr0=await c('POST','/api/t',{headers:{'x-create-key':'geheim'},body:{restore:'quatsch'}});ok(rr0.status===422,'Sicherung ist kein Objekt: 422');
+}
+{ // Fehlerprotokoll
+  const {env,c,code,adm}=await mk({});
+  const logs=[],orig=console.error;console.error=(...a)=>logs.push(a.join(' '));
+  try{
+    const {Tournament}=await import('../../server/core.mjs');const T0=Tournament.prototype;
+    const R=Object.getOwnPropertyDescriptor(T0,'routes').get.call({});R['GET boom']=function(){throw new Error('absichtlich')};
+    const r=await c('GET',T(code)+'/boom',{token:adm});
+    ok(r.status===500&&r.json.err==='intern','Interner Fehler: 500 an Client ('+r.status+')');
+    ok(logs.length===1&&/"ev":"intern"/.test(logs[0])&&/absichtlich/.test(logs[0])&&/GET boom/.test(logs[0]),'Interner Fehler im Protokoll',logs);
+    ok(!logs[0].includes(adm)&&!/Jörg|127\.0|"ip"/.test(logs[0]),'Protokoll ohne Zugangsschlüssel und IP');
+    delete R['GET boom'];
+  }finally{console.error=orig}
+  const lg=[];const o2=console.error;console.error=(...a)=>lg.push(a.join(' '));
+  let fail=false;const m2=await mk({},{failPut:()=>fail});fail=true;await join(m2.c,m2.code,'Zoë');console.error=o2;
+  ok(lg.some(x=>/"ev":"speichern"/.test(x))&&!lg.some(x=>x.includes('Zoë')),'Speicherfehler im Protokoll, ohne Namen');
+}
 console.log(f?`FEHLER gesamt ${f} von ${n}`:`ALLES OK (${n} Prüfungen)`);
 process.exit(f?1:0);

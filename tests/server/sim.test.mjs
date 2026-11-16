@@ -5,6 +5,23 @@ const names=i=>'Spieler '+(i+1);
 const viol={},ex={};const bad=(k,i)=>{viol[k]=(viol[k]||0)+1;if(!ex[k])ex[k]=i};
 const stat={runs:0,steps:0,finished:0,stuck:0,drops:0,disputes:0,undos:0,autoconf:0,calls:0,s4xx:0,evictions:0};
 
+/* Sicherung und Wiederherstellung: Zustand muss nach dem Zurückspielen identisch sein, Zugänge sind frei */
+let rtCount=0;
+async function roundtrip(call,P,adm,V0,rng2,bad){
+  const ex=await call('GET',P+'/admin/export',{token:adm});
+  if(ex.status!==200||!ex.json.backup){bad('Export',ex.text.slice(0,100));return}
+  if(/"hash"|adminHash|"p_|"a_/.test(ex.text))bad('Export enthält Zugangsdaten',{});
+  const env2=makeEnv({}),c2=client(env2);
+  const cr=await c2('POST','/api/t',{headers:{'x-create-key':'geheim'},body:{restore:ex.json.backup}});
+  if(cr.status!==200||!cr.json.restored){bad('Wiederherstellen',cr.text.slice(0,160));return}
+  const V2=(await c2('GET','/api/t/'+cr.json.code+'/state',{token:cr.json.adminKey})).json;
+  rtCount++;
+  const strip=v=>JSON.stringify({status:v.status,cfg:v.cfg,S:v.S,res:Object.fromEntries(Object.entries(v.res).map(([k,r])=>[k,{by:r.by,st:r.st,n:r.n}])),names:v.players.map(p=>p.name),out:v.players.map(p=>p.out)});
+  if(strip(V0)!==strip(V2))bad('Wiederhergestellter Stand weicht ab',{a:strip(V0).slice(0,150),b:strip(V2).slice(0,150)});
+  if(!V2.players.every(p=>p.released&&!p.taken))bad('Zugänge nach Wiederherstellung nicht frei',{});
+  if(V2.players.length){const r=await c2('POST','/api/t/'+cr.json.code+'/join',{body:{name:V2.players[ri2(rng2,V2.players.length)].name}});if(r.status!==200||!r.json.claimed)bad('Zugang über Namen zurückholen',r.text.slice(0,100))}
+}
+const ri2=(r,n)=>Math.floor(r()*n);
 async function sim(seed,evict){
   const rng=seeded(seed*101+3),ri=n=>Math.floor(rng()*n),pick=a=>a[ri(a.length)];
   Math.random=seeded(seed*7+1);
@@ -25,10 +42,11 @@ async function sim(seed,evict){
   const get=async(t=adm)=>(await call('GET',P+'/state',{token:t})).json;
   const sc=()=>{const k=ri(10);if(k<3)return[6,ri(2)?0:5];if(k<5)return[ri(2)?0:5,6];const a=ri(7);return draw?[a,a]:[a,(a+1+ri(6))%8]};
   const games=S=>S.ov?S.games:S.rounds.flatMap(r=>r.m.concat(r.x?[r.x]:[]));
-  let steps=0,idle=0,lastVer=-1,V=null;
+  let steps=0,idle=0,lastVer=-1,V=null;const rng2=seeded(seed*31+7);
   while(steps++<2500){
     V=await get();
     if(V.status==='finished')break;
+    if(rng2()<0.03)await roundtrip(call,P,adm,V,rng2,bad);
     if(V.ver===lastVer)idle++;else{idle=0;lastVer=V.ver}
     env.clock+=(5+ri(80))*1e3;
     const S=V.S,G=games(S).concat(S.so||[]),open=G.filter(m=>m.sa==null||m.sb==null),act=[...Array(S.n).keys()].filter(i=>!V.players[i].out);
@@ -72,6 +90,7 @@ async function sim(seed,evict){
   if(V.status!=='finished'){bad('nicht beendet',{seed,steps,auto,ov,n,R,c});return{V,env}}
   stat.finished++;
   check(V,bad,V.S,true);
+  await roundtrip(call,P,adm,V,rng2,bad);
   stat.evictions+=env.stats.evictions;
   return{V,env};
 }
@@ -102,5 +121,5 @@ for(let seed=1;seed<=T0;seed++){
   const b=EV>0?await sim(seed,EV):null;
   if(b&&JSON.stringify(a.V.S)!==JSON.stringify(b.V.S)){diff++;bad('Neustart-Test: Endstand weicht ab',{seed})}
 }
-console.log(JSON.stringify({...stat,abweichendNachNeustart:diff,verstoesse:viol,beispiele:ex}));
+console.log(JSON.stringify({...stat,sicherungen:rtCount,abweichendNachNeustart:diff,verstoesse:viol,beispiele:ex}));
 process.exit(Object.keys(viol).length?1:0);

@@ -90,6 +90,7 @@ export class Tournament{
       return this.ok(out);
     }catch(e){
       if(e instanceof Err)return{status:e.status,body:{ok:false,err:e.err,msg:e.msg},dirty:this.dirty,wipe:false};
+      this.lastError=e;
       return{status:500,body:{ok:false,err:'intern',msg:'Interner Fehler.'},dirty:this.dirty,wipe:false};
     }
   }
@@ -131,12 +132,57 @@ export class Tournament{
   init(body,code){
     if(this.m)throw new Err(409,'vorhanden','Dieses Turnier gibt es schon.');
     if(!CODE_RE.test(code||''))throw bad('Ungültiger Turniercode.');
-    const cfg=cleanCfg(isObj(body&&body.cfg)?body.cfg:{},DEFAULT_CFG,this.E);
+    const restore=body&&body.restore!==undefined&&body.restore!==null?this.parseBackup(body.restore):null;
+    const cfg=restore?restore.cfg:cleanCfg(isObj(body&&body.cfg)?body.cfg:{},DEFAULT_CFG,this.E);
     const adminKey='a_'+b64(this.rand(24));
     const t=this.now();
     this.m={v:1,code,created:t,touched:t,ver:1,adminHash:sha256(adminKey),cfg,players:[],nextPid:1,status:'lobby',S:null,nextGid:1,res:{},reqs:[],log:[]};
+    if(restore){
+      const m=this.m;
+      m.players=restore.players;m.nextPid=restore.nextPid;m.S=restore.S;m.res=restore.res;m.nextGid=restore.nextGid;
+      this.E.S=restore.S;
+      if(restore.S){for(const g of this.games())if(Number.isInteger(g.m.gid)&&g.m.gid>=m.nextGid)m.nextGid=g.m.gid+1;this.reconcile()}
+      this.commit({role:'admin'},'restore',m.players.length);
+    }
     this.dirty=true;
-    return{code,adminKey,ver:1};
+    return{code,adminKey,ver:this.m.ver,restored:!!restore};
+  }
+  /* Sicherung (Export) prüfen und in einen Turnierstand umwandeln. Zugänge werden nicht mitgesichert:
+     Alle Spieler sind danach „frei“ und holen ihren Zugang über ihren Namen zurück. */
+  parseBackup(src){
+    const E=this.E;
+    if(!isObj(src)||src.format!=='padel-turnier-sicherung'||src.v!==1)throw bad('Das ist keine Sicherungsdatei dieses Programms.');
+    if(!Array.isArray(src.players)||src.players.length>MAXP)throw bad('Die Sicherung enthält keine gültige Spielerliste.');
+    const players=[],ids=new Set();let maxPid=0;
+    for(const p of src.players){
+      const name=isObj(p)?cleanName(p.name):null;
+      if(name===null||!Number.isInteger(p.id)||p.id<1||p.id>1e9||ids.has(p.id)||players.some(q=>sameName(q.name,name)))throw bad('Ungültiger Spieler in der Sicherung.');
+      ids.add(p.id);maxPid=Math.max(maxPid,p.id);players.push({id:p.id,name,hash:null,released:true});
+    }
+    const cfg=cleanCfg(isObj(src.cfg)?src.cfg:{},DEFAULT_CFG,E);
+    let S=null;
+    if(src.S!==null&&src.S!==undefined){
+      try{S=JSON.parse(JSON.stringify(src.S))}catch(e){throw bad('Der Turnierstand in der Sicherung ist ungültig.')}
+      if(!E.okState(S))throw bad('Der Turnierstand in der Sicherung ist ungültig.');
+      if(S.n!==players.length||S.names.length!==players.length||S.names.some((x,i)=>x!==players[i].name))throw bad('Spielerliste und Turnierstand in der Sicherung passen nicht zusammen.');
+    }else if(Array.isArray(src.players)&&src.status&&src.status!=='lobby')throw bad('Der Turnierstand fehlt in der Sicherung.');
+    const res={};
+    if(isObj(src.res))for(const k of Object.keys(src.res)){
+      const r=src.res[k];
+      if(!/^\d{1,9}$/.test(k)||!isObj(r)||!['reported','confirmed','disputed','admin'].includes(r.st))throw bad('Ungültiges Ergebnis in der Sicherung.');
+      const by=r.by==='admin'?'admin':Number.isInteger(r.by)&&ids.has(r.by)?r.by:null;
+      if(by===null)throw bad('Ungültiges Ergebnis in der Sicherung.');
+      res[k]={by,st:r.st,at:Number.isFinite(r.at)?r.at:0,n:Number.isInteger(r.n)&&r.n>=0&&r.n<=99?r.n:0};
+      if(r.auto===true)res[k].auto=true;
+    }
+    let nextGid=Number.isInteger(src.nextGid)&&src.nextGid>0&&src.nextGid<1e9?src.nextGid:1;
+    return{players,cfg,S,res,nextPid:Math.max(maxPid+1,Number.isInteger(src.nextPid)&&src.nextPid<1e9?src.nextPid:1),nextGid};
+  }
+  /* Sicherung (Export): alles außer Zugangsdaten und Protokoll */
+  backup(){
+    const m=this.m;
+    return{format:'padel-turnier-sicherung',v:1,exportedAt:this.now(),code:m.code,status:m.status,cfg:m.cfg,
+      players:m.players.map(p=>({id:p.id,name:p.name})),nextPid:m.nextPid,nextGid:m.nextGid,S:m.S||null,res:m.res};
   }
 
   /* ===== Spiele ===== */
@@ -305,6 +351,9 @@ const ROUTES={
     E.createTournament({n,R:cfg.R,names:m.players.map(p=>p.name),lim:cfg.lim,courts:cfg.courts,dur:cfg.dur,brk:cfg.brk,draw:cfg.draw,cn:cfg.cn,wu:cfg.wu,t0:cfg.t0,ov:cfg.ov,lead:cfg.lead});
     m.S=E.S;m.status='running';m.res={};m.reqs=[];
     this.commit(c.who,'start',n);this.autoStep();return{};
+  },
+  'GET admin/export'(c){
+    this.need(c.who,'admin');return{backup:this.backup()};
   },
   'POST admin/result'(c){return setResult(this,c.who,c.body,true)},
   'POST admin/drop'(c){
