@@ -6,7 +6,7 @@ Voraussetzung: Cloudflare-Konto und GitHub-Konto (beides vorhanden). Kein Progra
 1. Cloudflare-Dashboard: **Workers & Pages**, **Create application**, **Import a repository** (Git verbinden), GitHub freigeben, Repository `rln90/padel` wählen.
 2. Projektname **`padel-turnier`** (muss mit `name` in `wrangler.toml` übereinstimmen). Produktions-Branch `main`. Build-Befehl leer lassen. Deploy-Befehl `npx wrangler deploy` (Standard).
 3. Ersten Build abwarten (grüner Haken unter **Deployments**).
-4. Beim Worker: **Settings**, **Variables and Secrets**, **Add**: Typ **Secret**, Name `CREATE_KEY`, Wert ein langes Passwort (nur du kennst es). Speichern und deployen.
+4. Beim Worker: **Settings**, **Variables and Secrets**, **Add**: Typ **Secret** (nicht „Text“), Name `CREATE_KEY`, Wert ein langes Passwort (nur du kennst es). Speichern und deployen. Ein Secret übersteht jeden Build; auch normale Variablen bleiben durch `keep_vars = true` in `wrangler.toml` erhalten.
 5. Adresse öffnen (`padel-turnier.<dein-name>.workers.dev`, siehe **Settings**, **Domains & Routes**). **Neues Turnier anlegen**, Schlüssel eingeben.
 
 ## B. Vorschau pro Pull Request (optional)
