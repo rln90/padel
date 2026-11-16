@@ -2,9 +2,10 @@
 // Routen: POST /api/t (anlegen), /api/t/<CODE>/<pfad> (siehe core.mjs), GET /api/health. Alles andere liefern die statischen Dateien.
 import {Tournament,CODE_RE,newCode,ROUTE_KEYS,TTL} from './core.mjs';
 import {sha256} from './sha256.mjs';
+import {Limiter} from './limiter.mjs';
 
 const MAX_BODY=4096;
-const J=(status,body,extra={})=>new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff',...extra}});
+const J=(status,body,extra={})=>new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff','content-security-policy':"default-src 'none'; frame-ancestors 'none'",'referrer-policy':'no-referrer','x-robots-tag':'noindex, nofollow',...extra}});
 const fail=(status,err,msg)=>J(status,{ok:false,err,msg});
 
 async function readJson(request){
@@ -27,7 +28,20 @@ export default{
       if(request.method!=='POST')return fail(405,'methode','Nur POST.');
       const key=env.CREATE_KEY;
       if(!key&&env.ALLOW_OPEN_CREATE!=='1')return fail(503,'nicht_eingerichtet','Der Server ist noch nicht eingerichtet (CREATE_KEY fehlt).');
-      if(key&&sha256(request.headers.get('x-create-key')||'')!==sha256(key))return fail(403,'schluessel','Falscher Schlüssel.');
+      const keyOk=!key||sha256(request.headers.get('x-create-key')||'')===sha256(key);
+      // Raten des Schlüssels und Massen-Anlegen bremsen (pro IP, siehe server/limiter.mjs)
+      let verdict;
+      if(env.LIMITER){
+        try{
+          const res=await env.LIMITER.get(env.LIMITER.idFromName('anlegen')).fetch('https://do/attempt',{method:'POST',body:JSON.stringify({ip:request.headers.get('cf-connecting-ip')||'-',keyOk})});
+          verdict=await res.json();
+        }catch(e){return fail(503,'limiter','Bitte gleich noch einmal versuchen.')}
+      }else verdict=keyOk?{allowed:true}:{allowed:false,reason:'schluessel'};
+      if(!verdict.allowed){
+        if(verdict.reason==='gesperrt')return J(429,{ok:false,err:'gesperrt',msg:'Zu viele falsche Schlüssel. Bitte in 15 Minuten noch einmal versuchen.'},{'retry-after':'900'});
+        if(verdict.reason==='zu_viele')return J(429,{ok:false,err:'zu_viele',msg:'Zu viele neue Turniere in kurzer Zeit. Bitte später noch einmal versuchen.'},{'retry-after':'3600'});
+        return fail(403,'schluessel','Falscher Schlüssel.');
+      }
       const r=await readJson(request);if(r.err)return r.err;
       for(let k=0;k<6;k++){
         const code=newCode(),stub=env.TOURNAMENT.get(env.TOURNAMENT.idFromName(code));
@@ -48,6 +62,15 @@ export default{
     return stub.fetch('https://do/'+sub+url.search,{method:request.method,headers:{'x-code':code,'x-token':bearer(request)||'','x-ip':request.headers.get('cf-connecting-ip')||'','content-type':'application/json'},body:request.method==='POST'?JSON.stringify(body):undefined});
   }
 };
+
+// Zählt Anlege-Versuche aller Besucher (eine einzige Instanz, nur im Arbeitsspeicher)
+export class LimiterDO{
+  constructor(state,env){this.l=new Limiter(()=>(env&&env.NOW?env.NOW():Date.now()))}
+  async fetch(request){
+    let b={};try{b=JSON.parse(await request.text()||'{}')}catch(e){}
+    return J(200,this.l.attempt(String(b.ip||'-').slice(0,64),b.keyOk===true));
+  }
+}
 
 export class TournamentDO{
   constructor(state,env){

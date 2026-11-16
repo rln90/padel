@@ -45,3 +45,16 @@ Nicht geprüft: echtes Cloudflare (`wrangler dev`), Firefox/Safari.
 
 Tests: `npm run test:online` (3 Modi, mehrere Seiten gegen den echten Server-Kern, 57 bis 60 Prüfungen je Modus), `npm run test:e2e` (echter Chromium gegen einen laufenden Server, z. B. `npm run dev`).
 Geprüft in `wrangler dev` (workerd, lokal): vollständiges Turnier mit 8 Spielern über 8 Browser-Seiten.
+
+## Härtung (Phase 4)
+| Bereich | Maßnahme |
+|---|---|
+| Header Seite | `public/_headers`: CSP, X-Frame-Options DENY, nosniff, Referrer-Policy no-referrer, Permissions-Policy, HSTS, noindex |
+| Header API | CSP `default-src 'none'`, nosniff, no-referrer, noindex, no-store (`server/worker.mjs`) |
+| Suchmaschinen | `public/robots.txt` sperrt alles, dazu `X-Robots-Tag` |
+| Anlegen | `server/limiter.mjs` (Durable Object `LimiterDO`): pro IP 8 falsche Schlüssel in 15 min, dann 15 min Sperre (auch mit richtigem Schlüssel); höchstens 30 neue Turniere pro Stunde |
+| Spielbetrieb | Bestehende Grenzen: 4 KB pro Anfrage, 600 Schreib-/6000 Lese-Anfragen pro Minute und Turnier, 30 Beitritte pro IP in 10 min, höchstens 24 Spieler |
+| Aufräumen | Turnier wird 7 Tage nach der letzten Änderung gelöscht (Alarm im Durable Object) |
+| Prüfung | `npm run test:csp` (Browser gegen `wrangler dev`): eigene Seite ohne CSP-Verstöße, fremde Skripte und Verbindungen blockiert |
+
+Grenzen: Die CSP erlaubt `'unsafe-inline'` für Skripte, weil die Oberfläche Inline-Handler nutzt. Schutz gegen eingeschleusten Code bietet vor allem das durchgängige Escapen aller Namen. Der Limiter-Zustand liegt nur im Arbeitsspeicher und beginnt nach einem Neustart der Instanz von vorn. Teilen sich mehrere Personen eine IP (z. B. WLAN vor Ort), teilen sie sich auch die Grenzen beim Anlegen.

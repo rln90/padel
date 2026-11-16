@@ -14,9 +14,17 @@ run_worker_first = ["/api/*"]
 name = "TOURNAMENT"
 class_name = "TournamentDO"
 
+[[durable_objects.bindings]]
+name = "LIMITER"
+class_name = "LimiterDO"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["TournamentDO"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["LimiterDO"]
 
 # Geheimnisse (nicht hier eintragen, sondern im Cloudflare-Dashboard unter Einstellungen > Variablen und Geheimnisse, Typ „Geheimnis“):
 #   CREATE_KEY = beliebiges langes Passwort. Nur wer es kennt, darf Turniere anlegen.
