@@ -131,11 +131,26 @@ function landing(){
 }
 
 /* Warteraum */
+/* QR-Code als Vektorgrafik (Bibliothek: src/vendor/qrcode.min.js). Immer schwarz auf weiß mit Ruhezone, auch im dunklen Modus. */
+const QRC={};
+function qrSvg(text){
+  if(QRC[text]!==undefined)return QRC[text];
+  let h="";
+  try{
+    const q=qrcode(0,"M");q.addData(text);q.make();
+    const n=q.getModuleCount(),m=4,s=n+2*m;let d="";
+    for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(q.isDark(r,c))d+=`M${c+m} ${r+m}h1v1h-1z`;
+    h=`<svg class="qr" viewBox="0 0 ${s} ${s}" role="img" aria-label="QR-Code mit dem Link für die Spieler" shape-rendering="crispEdges"><rect width="${s}" height="${s}" fill="#fff"/><path d="${d}" fill="#000"/></svg>`;
+  }catch(e){h=""}
+  QRC[text]=h;return h;
+}
+const qrBox=()=>{const s=qrSvg(playerLink());return s?`<div class="qrbox">${s}<p class="hint">Zum Beitreten mit der Handy-Kamera scannen.</p></div>`:""};
 function codeBox(){
   const adm=isAdm();
   return`<section class="panel"><div class="head"><h2>Turnier ${esc(CODE)}</h2><span class="meta">Warteraum</span></div>
     <p class="hint">Link für die Spieler. Wer ihn öffnet, trägt seinen Namen ein.</p>
     <div class="linkrow"><input readonly value="${esc(playerLink())}" data-sel aria-label="Link für die Spieler">${btn("copy","Kopieren",{q:true,attr:'data-text="'+esc(playerLink())+'"'})}</div>
+    ${qrBox()}
     ${adm?`<p class="hint">Dein Organisator-Link. Er ist der einzige Weg zurück in die Verwaltung, etwa mit einem anderen Gerät. Nicht weitergeben.</p>
     <div class="linkrow"><input readonly value="${esc(adminLink())}" data-sel aria-label="Organisator-Link">${btn("copy","Kopieren",{q:true,attr:'data-text="'+esc(adminLink())+'"'})}</div>`:""}</section>`;
 }
@@ -297,6 +312,7 @@ function bottom(){
       ${D.status==="running"?btn("assign","Jetzt ansetzen",{q:true})+sure("undo","undo","Letzte Ansetzung zurücknehmen","Wirklich zurücknehmen?"):""}
       ${btn("copy","Link für Spieler kopieren",{q:true,attr:'data-text="'+esc(playerLink())+'"'})}${btn("copy","Organisator-Link kopieren",{q:true,attr:'data-text="'+esc(adminLink())+'"'})}</div>
       ${cand.length?`<div class="actions"><select data-d="dropsel" aria-label="Spieler ausscheiden lassen">${cand.map(x=>`<option value="${x.p.id}">${esc(x.p.name)}</option>`).join("")}</select>${sure("drop","drop","Ausscheiden lassen","Wirklich ausscheiden lassen?")}</div>`:""}
+      <details data-k="qr"${OPEN.has("qr")?" open":""}><summary>QR-Code für Spieler</summary>${qrBox()}</details>
       <details data-k="players"${OPEN.has("players")?" open":""}><summary>Spieler und Zugänge</summary><ul class="plist">${D.players.map((p,i)=>`<li><span class="pn">${esc(p.name)}${p.out?' <span class="gone">ausgeschieden</span>':""}${p.released?' <span class="gone">Zugang frei</span>':""}</span><span class="pctl"><input data-d="pn${p.id}" maxlength="24" value="${esc(p.name)}" aria-label="Name ${esc(p.name)}">${btn("prename","Ändern",{q:true,attr:'data-pid="'+p.id+'"'})}${p.taken?btn("release","Zugang freigeben",{q:true,attr:'data-pid="'+p.id+'"'}):""}</span></li>`).join("")}</ul></details>
       <div class="actions">${sure("end","end","Turnier beenden und löschen","Endgültig löschen?")}</div>
       <p class="hint">Das Turnier wird 7 Tage nach der letzten Änderung automatisch gelöscht. Wer die Tabelle behalten will, kopiert sie vorher mit „Tabelle kopieren“.</p></section>`;

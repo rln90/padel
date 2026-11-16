@@ -23,6 +23,7 @@ home.type('#ckey','geheim');await home.click('[data-act=create]');await home.set
 const code=home.st().CODE,admKey=home.tok().a;
 ok(/^[A-Z2-9]{6}$/.test(code)&&/^a_/.test(admKey),'Turnier angelegt, Organisator-Zugang gespeichert');
 ok(home.text().includes('Turnier '+code)&&home.$$('input[data-sel]').length===2,'Warteraum mit zwei Links (Spieler, Organisator)');
+ok(home.$$('svg.qr').length===1&&/^M\d/.test(home.$('svg.qr path').getAttribute('d')||''),'Warteraum zeigt einen QR-Code');
 ok(home.$$('input[data-sel]')[1].value.endsWith('#'+code+'/'+admKey),'Organisator-Link enthält Schlüssel');
 const A=home;
 

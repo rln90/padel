@@ -14,10 +14,12 @@
     "test:e2e": "node tests/online/e2e.mjs",
     "test:audit": "node tests/online/audit.mjs",
     "test:csp": "node tests/online/csp.mjs",
-    "test:probe": "node tests/online/generalprobe.mjs"
+    "test:probe": "node tests/online/generalprobe.mjs",
+    "test:qr": "node tests/online/qr.mjs"
   },
   "devDependencies": {
     "jsdom": "^24.0.0",
+    "jsqr": "^1.4.0",
     "wrangler": "^4.162.0"
   }
 }
