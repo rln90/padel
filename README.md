@@ -81,3 +81,12 @@ Grenzen der Sicherung: Das Protokoll der Änderungen und offene Ausscheiden-Anfr
 | Endstand teilen | Nach dem Turnier: „Endstand teilen“ nutzt die Teilen-Funktion des Geräts, sonst kopiert es den Text (Plätze, Punkte, Games, Link, 7 Tage abrufbar) |
 
 Grenzen: Der Hinweis wirkt nur, solange die Seite geöffnet ist (auch im Hintergrund-Tab, dort wird alle 15 Sekunden geprüft). Echte Benachrichtigungen bei geschlossener Seite (Web-Push) gibt es nicht. Prüfung: `tests/online/ui-komfort.test.mjs` (Teil von `npm run test:online`).
+
+## Feinschliff (Phase 7)
+| Bereich | Änderung |
+|---|---|
+| Platznamen | Ein Feld pro Platz statt Kommaliste. Nach dem Start im Organisator-Bereich unter „Platznamen ändern“ jederzeit anpassbar, gilt sofort für alle |
+| Lange Namen | Ergebnisse auf dem Handy zweizeilig (jeder Spieler mit eigenem Feld), Tabelle mit umbrechendem Namen und sichtbaren Punkten, Spielplan-Zellen mit zwei Zeilen |
+| Spieleransicht | Oben die blaue Karte „Dein nächstes Spiel“ (Gegner groß, Platz als gelbe Pille, Uhrzeit, Ergebniseingabe), darunter die gelbe Platzierungskarte, dann Tabelle, Runde, Spielplan; Regeln und Ausscheiden unten |
+| Organisator | Spielerliste kompakt (Name lesbar, „Bearbeiten“ klappt Feld und Knöpfe auf); „Selbst mitspielen“ steht unter dem Organisator-Bereich |
+| Test | `npm run test:layout`: lange Namen, vier Bildschirmbreiten, hell und dunkel, kein Seitenüberlauf |

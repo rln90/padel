@@ -73,7 +73,7 @@ ok(A.$('#draw').disabled&&A.$('#draw').value==='no'&&A.$('#dur').value==='40','O
 A.type('#lim','yes');await A.settle();ok(!A.$('#draw').disabled&&A.$('#dur').value==='20','Mit Zeitlimit wieder frei');
 A.type('#t0','25:99');await A.settle();
 ok(A.$('#t0').value==='','Ungültige Startzeit wird geleert (wie in der Offline-Einrichtung)');
-A.type('#t0','18:30');A.type('#cn','Center, Nord');await A.click('[data-act=config]');await A.settle(8);
+A.type('#t0','18:30');A.type('[data-d=cn0]','Center');A.type('[data-d=cn1]','Nord');await A.click('[data-act=config]');await A.settle(8);
 ok(/gespeichert/.test(A.text('#onlmsg')),'Einstellungen gespeichert');
 await P.Anna.poll();
 
@@ -94,6 +94,16 @@ for(const k in P)await P[k].poll();
 ok(A.st().D.status==='running'&&!A.$('#app').hidden,'Turnier läuft, Ansicht sichtbar');
 ok(P.Anna.$('#tab table')&&/Tabelle/.test(P.Anna.text('#app')),'Spieler sieht Tabelle');
 ok(!P.Anna.$('#nameIn'),'Spieler nach Start ohne Namensfeld');
+ok(JSON.stringify(A.st().D.cfg.cn)===JSON.stringify(['Center','Nord']),'Platznamen einzeln gespeichert');
+ok(A.w.eval('cname(0)')==='Center'&&A.w.eval('cname(1)')==='Nord','Platznamen im Stand');
+{ const d=A.$('[data-k=cnames]');ok(!!d&&d.querySelectorAll('input:not([hidden])').length===A.w.eval('S.courts'),'Platznamen später änderbar: ein Feld pro Platz');
+  A.type('[data-d=cn0]','Center <b>');await A.click('[data-act=courts]');await A.settle(8);
+  ok(A.w.eval('cname(0)')==='Center','Ungültiger Platzname (mit <) wird abgelehnt, alter bleibt');
+  A.type('[data-d=cn0]','Haupt & "Co"');await A.click('[data-act=courts]');await A.settle(8);
+  ok(/Platznamen gespeichert/.test(A.text('#onlmsg')),'Platznamen nach Start gespeichert');
+  ok(A.w.eval('cname(0)')==='Haupt & "Co"'&&A.w.eval('cname(1)')==='Nord','Neuer Platzname gilt sofort, zweiter bleibt');
+  await P.Anna.poll();ok(P.Anna.w.eval('cname(0)')==='Haupt & "Co"','Spieler sieht neuen Platznamen');
+  ok(P.Anna.$('#app').innerHTML.includes('Haupt &amp; "Co"')||P.Anna.$('#app').innerHTML.includes('Haupt &amp; &quot;Co&quot;'),'Platzname wird escaped ausgegeben') }
 { const l=mkPage(env,O+'#'+code,{errors});await l.settle(10);
   ok(l.$('#nameIn')&&/schaust zu/.test(l.text('#onl')),'Neuer Besucher nach Start: Zuschauer');
   l.type('#nameIn','Zoe');await l.click('[data-act=join]');ok(/läuft bereits/.test(l.text('#onlmsg')),'Beitritt nach Start abgelehnt');l.close() }

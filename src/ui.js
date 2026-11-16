@@ -355,7 +355,7 @@ function render0(){
   }
   if(VIEW){
     $("#app").innerHTML=`<div id="champ" aria-live="polite"></div>
-    <section class="panel"><div class="head"><h2 id="rh"></h2><span class="meta" id="prog"></span></div><div id="mine"></div><div class="cur" id="vcur"></div></section>
+    <section class="panel roundp"><div class="head"><h2 id="rh"></h2><span class="meta" id="prog"></span></div><div id="mine"></div><div class="cur" id="vcur"></div></section>
     <section class="section"><h2>Tabelle</h2><div class="wrap" id="tab"></div><p class="legend" id="leg"></p><div class="actions"><button class="quiet more" id="morecol" aria-expanded="false" onclick="toggleCols()">Games und Buchholz zeigen</button><button class="quiet" onclick="copyTable()">Tabelle kopieren</button><span class="status" id="cpst" role="status"></span></div><textarea id="cpbox" class="cpbox" hidden readonly aria-label="Tabelle als Text"></textarea></section>
     <section class="section"><h2>Spielplan</h2><div class="wrap" id="plan"></div><p class="legend">Zeiten sind Richtwerte, inklusive Wechselzeit, und können sich verschieben. Hervorgehobene Felder laufen gerade.</p></section>`;
     renderViewer();return;

@@ -97,6 +97,8 @@ table{width:100%;border-collapse:collapse;font-size:15px;font-variant-numeric:ta
 th,td{padding:9px 8px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
 th{font-size:13px;font-weight:500;color:var(--muted);border-bottom-color:var(--edge)}
 th.nm,td.nm{text-align:left;width:100%}
+td.nm{white-space:normal;overflow-wrap:anywhere;min-width:96px;line-height:1.25}
+th.rk0,td.rk{width:1%}
 table.cmpt{width:100%}
 .cmpt th.l,.cmpt td.l{text-align:left}
 .cmpt th{white-space:normal;vertical-align:bottom;line-height:1.2}
@@ -129,7 +131,7 @@ tr.sel td{font-weight:600;color:var(--court)}
 select:disabled{opacity:.55;cursor:not-allowed}
 td.bk{text-align:left;white-space:normal}
 .bkt{margin-top:8px}
-.plan{display:grid;grid-template-columns:40px repeat(var(--cols),minmax(84px,1fr));gap:6px;min-width:calc(40px + var(--cols)*90px)}
+.plan{display:grid;grid-template-columns:40px repeat(var(--cols),minmax(112px,1fr));gap:6px;min-width:calc(40px + var(--cols)*118px)}
 .tm{position:sticky;left:0;z-index:1;background:var(--paper);align-self:center;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
 .ph{text-align:center;font-size:13px;color:var(--muted);padding-bottom:2px}
 .rh{grid-column:1/-1;display:flex;justify-content:flex-start;align-items:baseline;gap:12px;margin-top:8px;padding-top:10px;border-top:1px solid var(--line);font-weight:600}
@@ -145,7 +147,7 @@ td.bk{text-align:left;white-space:normal}
 .cell .tag{font-size:11px;line-height:1.25;color:var(--muted)}
 .cell .tag span{display:block}
 .cell .pl{display:flex;justify-content:space-between;gap:6px}
-.cell .pl span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cell .pl span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;overflow-wrap:anywhere;line-height:1.25}
 .cell .pl b{font-weight:500;font-variant-numeric:tabular-nums}
 .cell .pl.w{color:var(--court);font-weight:600}
 .cell .pl.w b{font-weight:600}
@@ -182,6 +184,16 @@ summary{cursor:pointer;font-weight:500;padding:9px 0}
 .rules ul{margin:10px 0 0;padding-left:20px;color:var(--muted);font-size:14px}
 .rules li+li{margin-top:6px}
 
+/* Schmale Bildschirme: Ergebnis zweizeilig, jeder Spieler mit seinem Feld, lange Namen bleiben lesbar */
+@media (max-width:560px){
+  .m{grid-template-columns:minmax(0,1fr) 64px;grid-template-areas:"a sa" "b sb";gap:6px 12px}
+  .m>:nth-child(1){grid-area:a;text-align:left}
+  .m>:nth-child(2){grid-area:sa}
+  .m>:nth-child(3){display:none}
+  .m>:nth-child(4){grid-area:sb}
+  .m>:nth-child(5){grid-area:b}
+  .m .a,.m .b{overflow-wrap:break-word;hyphens:auto;line-height:1.25}
+}
 @media (max-width:480px){
   h1{font-size:26px}
   .panel{padding:16px}
@@ -234,6 +246,43 @@ body.onl-me .mine>label,body.onl-me .mine>select{display:none}
 .mylist .mt{grid-column:1/-1;font-size:13px;opacity:.75}
 .mylist .mr{text-align:right}
 .panel.final .sum{margin:4px 0 10px}
+[hidden]{display:none!important}
+.field.wide{grid-column:1/-1}
+.cnl{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.cnl input{min-width:0}
+
+/* Spieleransicht: Karte für das nächste Spiel und Platzierung */
+.hero{background:var(--court);color:var(--on-court);border-radius:14px;padding:22px 20px;display:flex;flex-direction:column;gap:6px}
+.hero .hk{margin:0;font-size:14px;font-weight:500;opacity:.85}
+.hero .hg{margin:8px 0 0;font-size:15px;opacity:.85}
+.hero .ho{font:600 34px/1.08 var(--display);margin:0;overflow-wrap:anywhere;hyphens:auto;text-wrap:balance}
+.hero .hw{margin:10px 0 2px;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+.hero .pill{background:var(--ball);color:var(--on-ball);font-weight:700;font-size:16px;padding:7px 14px;border-radius:999px;overflow-wrap:anywhere}
+.hero .hz{font-size:16px;font-weight:600}
+.hero .hin{background:var(--surface);color:var(--ink);border-radius:10px;padding:12px 14px;margin-top:10px}
+.hero .hin .sum{margin:0 0 6px}
+.hero .hh{margin:8px 0 0;font-size:14px;opacity:.85}
+.rankc{background:var(--ball);color:var(--on-ball);border-radius:14px;padding:18px 20px;display:flex;gap:18px;align-items:center}
+.rankc .rn{display:flex;flex-direction:column;align-items:center;line-height:1;min-width:76px}
+.rankc .rl{font-size:14px;font-weight:600}
+.rankc .rn b{font:600 64px/1 var(--display);font-variant-numeric:tabular-nums}
+.rankc .rv{font-size:14px}
+.rankc .rd{min-width:0;display:flex;flex-direction:column;gap:2px;font-size:15px}
+.rankc .rd p{margin:0}
+.rankc .rd .rname{font-weight:700;overflow-wrap:anywhere}
+.lastp{gap:4px}
+#livebar:not(:empty){border:0;padding:0 2px;color:var(--muted);font-size:13px;margin:-10px 0 0}
+body.onl-me #app>.roundp{order:3}
+body.onl-me #app>.section:nth-of-type(2){order:1}
+body.onl-me #app>.section:nth-of-type(3){order:4}
+@media (max-width:380px){.hero .ho{font-size:29px}.rankc .rn b{font-size:54px}}
+.pe>summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;cursor:pointer;font-weight:400}
+.pe>summary::-webkit-details-marker{display:none}
+.pe .pb{flex:0 0 auto;font-size:13px;color:var(--court);font-weight:600;padding:6px 10px;border:1px solid var(--edge);border-radius:8px}
+.pe[open] .pb{background:var(--tint)}
+.pe .pctl.full{flex-wrap:wrap;padding-bottom:10px}
+.pe .pctl.full input{flex:1 1 100%}
+.plist li.adm-li{padding:0}
 </style>
 
 <main>
@@ -1128,7 +1177,7 @@ function render0(){
   }
   if(VIEW){
     $("#app").innerHTML=`<div id="champ" aria-live="polite"></div>
-    <section class="panel"><div class="head"><h2 id="rh"></h2><span class="meta" id="prog"></span></div><div id="mine"></div><div class="cur" id="vcur"></div></section>
+    <section class="panel roundp"><div class="head"><h2 id="rh"></h2><span class="meta" id="prog"></span></div><div id="mine"></div><div class="cur" id="vcur"></div></section>
     <section class="section"><h2>Tabelle</h2><div class="wrap" id="tab"></div><p class="legend" id="leg"></p><div class="actions"><button class="quiet more" id="morecol" aria-expanded="false" onclick="toggleCols()">Games und Buchholz zeigen</button><button class="quiet" onclick="copyTable()">Tabelle kopieren</button><span class="status" id="cpst" role="status"></span></div><textarea id="cpbox" class="cpbox" hidden readonly aria-label="Tabelle als Text"></textarea></section>
     <section class="section"><h2>Spielplan</h2><div class="wrap" id="plan"></div><p class="legend">Zeiten sind Richtwerte, inklusive Wechselzeit, und können sich verschieben. Hervorgehobene Felder laufen gerade.</p></section>`;
     renderViewer();return;
@@ -1629,7 +1678,7 @@ function paintPanels(){
     if(!CODE)top+=landing();
     else if(!D)top+='<p class="hint wait0">Lädt …</p>';
     else if(D.status==="lobby")top+=lobby();
-    else{top+=finalPanel()+playerPanel()+adminPanel();bot=bottom()+`<section class="panel">${rulesBox()}</section>`}
+    else{top+=finalPanel()+(isAdm()&&myIdx()<0?adminPanel()+playerPanel():playerPanel()+adminPanel());bot=bottom()+`<section class="panel">${rulesBox()}</section>`}
     a.innerHTML=top;b.innerHTML=bot;paintFlash();
   });
   if(D&&D.status==="lobby"&&isAdm()&&q("#sum")){try{syncSetup()}catch(e){}}
@@ -1697,15 +1746,27 @@ function lobby(){
     <p class="hint">${n<4?"Zum Start braucht es mindestens 4 Spieler.":"Beim Start werden Runde 1 oder die ersten Spiele ausgelost."}</p></section>`;
   return h;
 }
+/* Ein Spieler im Organisator-Bereich: Name lesbar, Bearbeiten klappt Feld und Knöpfe auf */
+function pedit(p,badge,extra){
+  return`<details class="pe" data-k="pe${p.id}"${OPEN.has("pe"+p.id)?" open":""}><summary><span class="pn">${esc(p.name)}${badge}</span><span class="pb">Bearbeiten</span></summary><div class="pctl full"><input data-d="pn${p.id}" maxlength="24" value="${esc(p.name)}" aria-label="Name ${esc(p.name)}">${btn("prename","Speichern",{attr:'data-pid="'+p.id+'"'})}${extra||""}</div></details>`;
+}
 function playerLi(p,i,adm,mi){
   const badge=(i===mi?' <span class="gone">du</span>':"")+(p.released?' <span class="gone">Zugang frei</span>':"")+(!p.taken&&!p.released?' <span class="gone">vom Organisator eingetragen</span>':"");
   if(!adm)return`<li><span class="pn">${esc(p.name)}${badge}</span></li>`;
-  return`<li class="adm-li"><span class="pctl full"><input data-d="pn${p.id}" maxlength="24" value="${esc(p.name)}" aria-label="Name ${esc(p.name)}">${btn("prename","Ändern",{q:true,attr:'data-pid="'+p.id+'"'})}${btn("kick","Entfernen",{q:true,attr:'data-pid="'+p.id+'"'})}</span>${badge.trim()?`<span class="pn sub">${badge}</span>`:""}</li>`;
+  return`<li class="adm-li">${pedit(p,badge,btn("kick","Entfernen",{q:true,attr:'data-pid="'+p.id+'"'}))}</li>`;
 }
 
 /* Einstellungen (Warteraum): gleiche Felder und gleiche Berechnung wie in der Offline-Einrichtung (syncSetup) */
 const opts=(arr,cur)=>arr.map(([v,t])=>`<option value="${esc(v)}"${String(v)===String(cur)?" selected":""}>${esc(t)}</option>`).join("");
 const fld=(id,label,arr,cur,extra="")=>`<div class="field"${extra}><label for="${id}">${label}</label><select id="${id}" data-d="${id}">${opts(arr,cur)}</select></div>`;
+/* Ein Feld pro Platz (höchstens 12); nur so viele sichtbar, wie Plätze gebucht sind */
+function courtInputs(count,cn){
+  return`<div class="cnl" id="cnl">${Array.from({length:12},(_,i)=>`<input type="text" maxlength="24" autocomplete="off" data-d="cn${i}" placeholder="Platz ${i+1}" aria-label="Name Platz ${i+1}" value="${esc((cn||[])[i]||"")}"${i>=count?" hidden":""}>`).join("")}</div>`;
+}
+function readCourts(count){
+  const a=[];for(let i=0;i<Math.min(12,count);i++)a.push(val("cn"+i).trim());
+  while(a.length&&!a[a.length-1])a.pop();return a;
+}
 function configPanel(n){
   const c=D.cfg,N=Math.max(MINN,n),mx=Math.floor(N/2),R=validR(N,c.R),cc=Math.min(mx,c.courts);
   return`<details class="panel cfg"${OPEN.has("cfg")?" open":""} data-k="cfg"><summary>Einstellungen</summary>
@@ -1731,7 +1792,7 @@ function configPanel(n){
       ${fld("sec","Buchungssicherheit",[[50,"Knapp: reicht meist"],[75,"Normal: reicht fast immer"],[95,"Sicher: mit Reserve"]],75,c.ov==="no"?' id="secf" hidden':' id="secf"')}
     </div></fieldset>
     <fieldset class="grp"><legend>Namen und Ergebnisse</legend><div class="grid">
-      <div class="field"><label for="cn">Platznamen (optional, mit Komma)</label><input id="cn" data-d="cn" maxlength="120" placeholder="z. B. Center, Nord" value="${esc((c.cn||[]).join(", "))}"></div>
+      <div class="field wide" id="cnw"><label>Platznamen (optional)</label>${courtInputs(cc,c.cn)}</div>
       ${fld("auto","Ergebnisse",[["reported","Ein Spieler trägt ein, das gilt sofort"],["confirmed","Der Gegner bestätigt"],["off","Nur ich trage ein und setze an"]],c.auto)}
     </div></fieldset>
     <p class="hint">Bei „Ein Spieler trägt ein“ gilt jedes Ergebnis sofort, die nächsten Spiele werden automatisch angesetzt. Du kannst jedes Ergebnis jederzeit ändern.</p>
@@ -1780,27 +1841,40 @@ function playerPanel(){
   if(D.players[mi].out)return`<section class="panel"><h2>Du bist ausgeschieden</h2><p class="hint">Deine bisherigen Spiele zählen weiter. Danke fürs Mitspielen.</p>${standLine(mi)}</section>`;
   const G=gamesOf().filter(g=>g.m.a===mi||g.m.b===mi);
   const open=G.filter(g=>!done(g.m)),last=G.filter(g=>done(g.m)).slice(-1)[0];
-  let h=`<section class="panel mygame"><div class="head"><h2>Dein Spiel</h2><span class="meta">${esc(D.players[mi].name)}</span></div>`;
+  let h="";
   const ng=NEWG!==null?open.find(g=>g.m.gid===NEWG):null;
   if(ng){const nx=nextOf(mi),opp=S.names[ng.m.a===mi?ng.m.b:ng.m.a],where=nx&&nx.k!=null?" · "+cname(nx.k)+(T0()!=null?" ab "+tt(nx.i,S.dur+S.brk):""):"";
     h+=`<div class="newgame" role="alert"><span><b>Dein nächstes Spiel steht.</b> Gegen ${esc(opp)}${esc(where)}</span>${btn("seen","OK",{q:true})}</div>`}
-  h+=standLine(mi);
+  const nx=open.length?nextOf(mi):null;
+  h+=`<section class="hero mygame" aria-label="Dein Spiel">`;
   if(open.length){
-    const nx=nextOf(mi);
+    const g0=open[0],opp0=S.names[g0.m.a===mi?g0.m.b:g0.m.a];
+    h+=`<p class="hk">Dein nächstes Spiel</p><p class="hg">gegen</p><h2 class="ho">${esc(opp0)}</h2>`;
+    const pill=nx&&nx.k!=null?`<span class="pill">${esc(cname(nx.k))}</span>`:"",tm=nx&&T0()!=null?`<span class="hz">ab ${tt(nx.i,S.dur+S.brk)}</span>`:"";
+    if(pill||tm)h+=`<p class="hw">${pill}${tm}</p>`;
     h+=open.map((g,i)=>{const opp=S.names[g.m.a===mi?g.m.b:g.m.a];
-      const where=i===0&&nx?`${nx.k==null?"":esc(cname(nx.k))}${nx.k!=null&&T0()!=null?" · ab "+tt(nx.i,S.dur+S.brk):""}`:"";
-      return`<p class="sum">Gegen ${esc(opp)}${where?" · "+where:""}</p>`+gameRow(g,{})}).join("");
-    h+=`<p class="hint">Nach dem Spiel trägt einer von euch beiden das Ergebnis in Games ein.${D.cfg.auto==="confirmed"?" Der Gegner bestätigt es.":" Es gilt sofort."}${S.draw?"":" Unentschieden sind nicht erlaubt."}</p>`;
-  }else if(!last){
-    h+=`<p class="hint">${isOver()?"Alle Spiele sind gespielt.":"Noch nicht angesetzt. Dein nächstes Spiel erscheint hier automatisch."}</p>`;
-  }else if(!isOver())h+=`<p class="hint">Gerade kein offenes Spiel. Dein nächstes Spiel erscheint hier automatisch.</p>`;
+      return`<div class="hin">${i?`<p class="sum">Danach: gegen ${esc(opp)}</p>`:""}${gameRow(g,{})}</div>`}).join("");
+    h+=`<p class="hh">Nach dem Spiel trägt einer von euch beiden das Ergebnis in Games ein.${D.cfg.auto==="confirmed"?" Der Gegner bestätigt es.":" Es gilt sofort."}${S.draw?"":" Unentschieden sind nicht erlaubt."}</p>`;
+  }else{
+    h+=`<p class="hk">Dein Spiel</p><h2 class="ho">${isOver()?"Alle Spiele gespielt":last?"Gerade kein offenes Spiel":"Noch nicht angesetzt"}</h2><p class="hh">${isOver()?"Danke fürs Mitspielen.":"Dein nächstes Spiel erscheint hier automatisch."}</p>`;
+  }
+  h+=`</section>`+rankCard(mi);
+  let more="";
   if(last){
     const r=D.res[last.m.gid],other=r&&r.by!==TOK.pid&&r.st==="reported";
     const extra=other&&D.cfg.auto==="confirmed"?btn("confirm","Stimmt",{q:true,attr:'data-gid="'+last.m.gid+'"'})+btn("dispute","Stimmt nicht",{q:true,attr:'data-gid="'+last.m.gid+'"'}):"";
-    h+=`<details class="lastg" data-k="last"${OPEN.has("last")||other||(r&&r.st==="disputed")?" open":""}><summary>Letztes Ergebnis${last.locked?"":" (änderbar)"}</summary>${gameRow(last,{extra})}</details>`;
+    more+=`<details class="lastg" data-k="last"${OPEN.has("last")||other||(r&&r.st==="disputed")?" open":""}><summary>Letztes Ergebnis${last.locked?"":" (änderbar)"}</summary>${gameRow(last,{extra})}</details>`;
   }
-  if(G.length)h+=`<details class="lastg" data-k="mine"${OPEN.has("mine")?" open":""}><summary>Meine Spiele (${G.length})</summary>${myGames(mi,G)}</details>`;
-  return h+"</section>";
+  if(G.length)more+=`<details class="lastg" data-k="mine"${OPEN.has("mine")?" open":""}><summary>Meine Spiele (${G.length})</summary>${myGames(mi,G)}</details>`;
+  if(more)h+=`<section class="panel lastp">${more}</section>`;
+  return h;
+}
+/* Mein Platz in der Tabelle (groß, gelbe Karte) */
+function rankCard(mi){
+  let st;try{st=ranking()}catch(e){return""}
+  const me=st.find(x=>x.i===mi);if(!me)return"";
+  const pl=me.g?me.rk:"–";
+  return`<section class="rankc" aria-label="Deine Platzierung"><div class="rn"><span class="rl">Platz</span><b>${pl}</b><span class="rv">von ${st.length}</span></div><div class="rd"><p class="rname">${esc(D.players[mi].name)}</p>${me.g?`<p><b>${me.p}</b> ${me.p===1?"Punkt":"Punkte"}</p><p>${me.w} ${me.w===1?"Sieg":"Siege"}, ${me.l} ${me.l===1?"Niederlage":"Niederlagen"}${S.draw&&me.d?", "+me.d+" unentschieden":""}</p><p>Games ${me.gf}:${me.ga}</p>`:`<p>Noch kein Spiel gespielt.</p>`}</div></section>`;
 }
 /* Mein Platz in der Tabelle */
 function standLine(mi){
@@ -1866,8 +1940,9 @@ function bottom(){
       ${btn("export","Sicherung herunterladen",{q:true})}
       ${btn("copy","Link für Spieler kopieren",{q:true,attr:'data-text="'+esc(playerLink())+'"'})}${btn("copy","Organisator-Link kopieren",{q:true,attr:'data-text="'+esc(adminLink())+'"'})}</div>
       ${cand.length?`<div class="actions"><select data-d="dropsel" aria-label="Spieler ausscheiden lassen">${cand.map(x=>`<option value="${x.p.id}">${esc(x.p.name)}</option>`).join("")}</select>${sure("drop","drop","Ausscheiden lassen","Wirklich ausscheiden lassen?")}</div>`:""}
+      ${D.status==="running"&&S&&S.courts>0?`<details data-k="cnames"${OPEN.has("cnames")?" open":""}><summary>Platznamen ändern</summary>${courtInputs(S.courts,D.cfg.cn)}<div class="actions">${btn("courts","Platznamen speichern")}</div></details>`:""}
       <details data-k="qr"${OPEN.has("qr")?" open":""}><summary>QR-Code für Spieler</summary>${qrBox()}</details>
-      <details data-k="players"${OPEN.has("players")?" open":""}><summary>Spieler und Zugänge</summary><ul class="plist">${D.players.map((p,i)=>`<li><span class="pn">${esc(p.name)}${p.out?' <span class="gone">ausgeschieden</span>':""}${p.released?' <span class="gone">Zugang frei</span>':""}</span><span class="pctl"><input data-d="pn${p.id}" maxlength="24" value="${esc(p.name)}" aria-label="Name ${esc(p.name)}">${btn("prename","Ändern",{q:true,attr:'data-pid="'+p.id+'"'})}${p.taken?btn("release","Zugang freigeben",{q:true,attr:'data-pid="'+p.id+'"'}):""}</span></li>`).join("")}</ul></details>
+      <details data-k="players"${OPEN.has("players")?" open":""}><summary>Spieler und Zugänge</summary><ul class="plist">${D.players.map((p,i)=>`<li class="adm-li">${pedit(p,(p.out?' <span class="gone">ausgeschieden</span>':"")+(p.released?' <span class="gone">Zugang frei</span>':""),p.taken?btn("release","Zugang freigeben",{q:true,attr:'data-pid="'+p.id+'"'}):"")}</li>`).join("")}</ul></details>
       <div class="actions">${sure("end","end","Turnier beenden und löschen","Endgültig löschen?")}</div>
       <p class="hint">Das Turnier wird 7 Tage nach der letzten Änderung automatisch gelöscht. Wer die Tabelle behalten will, kopiert sie vorher mit „Tabelle kopieren“.</p></section>`;
   }
@@ -1938,9 +2013,13 @@ const ACT={
   async kick(e){if(!await call("/admin/kick",{pid:+e.dataset.pid},"admin"))return;await refresh()},
   async release(e){if(!await call("/admin/release",{pid:+e.dataset.pid},"admin"))return;say("Zugang freigegeben. Der Spieler trägt jetzt seinen Namen erneut ein.");await refresh()},
   async config(){
-    const g=k=>val(k),lim=g("lim")==="yes",cfg={R:+g("r"),courts:+g("c"),ov:g("ov"),lead:+g("lead")||0,lim,dur:+g("dur"),brk:+g("brk"),wu:+g("wu"),draw:lim&&g("draw")==="yes",auto:g("auto"),cn:g("cn").split(",").map(x=>x.trim()).filter(Boolean).slice(0,12)};
+    const g=k=>val(k),lim=g("lim")==="yes",cfg={R:+g("r"),courts:+g("c"),ov:g("ov"),lead:+g("lead")||0,lim,dur:+g("dur"),brk:+g("brk"),wu:+g("wu"),draw:lim&&g("draw")==="yes",auto:g("auto"),cn:readCourts(+g("c"))};
     const t=g("t0").trim();if(t==="")cfg.t0=null;else{const v=tparse(t);if(v==null){say("Die Startzeit bitte als hh:mm eintragen, z. B. 18:30.",true);return}cfg.t0=v}
     if(!await call("/admin/config",{cfg},"admin"))return;say("Einstellungen gespeichert.");await refresh();
+  },
+  async courts(){
+    const cn=readCourts(S&&S.courts||0);
+    if(!await call("/admin/config",{cfg:{cn}},"admin"))return;say("Platznamen gespeichert.");await refresh();
   },
   async start(){disarm();if(!await call("/admin/start",{},"admin"))return;await refresh()},
   async save(e){const gid=+e.dataset.gid,s=readScore(e);if(!s)return;const r=await call("/result",{gid,...s},"player");if(!r)return;say("Ergebnis gespeichert.");await refresh()},
@@ -1981,12 +2060,13 @@ document.addEventListener("keydown",ev=>{
   const k=ev.target.dataset.d;let a=null;
   if(k==="code")a="goto";else if(k==="ckey")a="create";else if(k==="name")a="join";else if(k==="ren")a="rename";else if(k==="add")a="add";
   else if(/^[AP]g\d+[ab]$/.test(k)){const r=ev.target.closest(".mw"),b=r&&r.querySelector("[data-act=save],[data-act=asave]");if(b&&!b.disabled)b.click();return}
+  else if(/^cn\d+$/.test(k)){const b=document.querySelector("[data-act=config],[data-act=courts]");if(b)b.click();return}
   else if(/^pn\d+$/.test(k)){const b=ev.target.parentElement.querySelector("[data-act=prename]");if(b)b.click();return}
   if(a){const b=document.querySelector('[data-act="'+a+'"]');if(b)b.click()}
 });
 document.addEventListener("change",ev=>{
   const e=ev.target;if(!e||!e.closest||!e.closest("details.cfg"))return;const k=e.dataset&&e.dataset.d;
-  try{if(k==="lim")limChange();else if(k==="t0")fixT0(e);else if(["r","c","ov","lead","dur","draw","brk","wu","sec"].includes(k))syncSetup()}catch(x){}
+  try{if(k==="lim")limChange();else if(k==="t0")fixT0(e);else if(k==="c"){const n=+e.value;document.querySelectorAll("#cnl [data-d^=cn]").forEach((x,i)=>{x.hidden=i>=n});syncSetup()}else if(["r","ov","lead","dur","draw","brk","wu","sec"].includes(k))syncSetup()}catch(x){}
 });
 document.addEventListener("toggle",ev=>{const d=ev.target;if(d&&d.dataset&&d.dataset.k){d.open?OPEN.add(d.dataset.k):OPEN.delete(d.dataset.k)}},true);
 
