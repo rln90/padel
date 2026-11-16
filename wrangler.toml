@@ -2,6 +2,8 @@
 name = "padel-turnier"
 main = "server/worker.mjs"
 compatibility_date = "2025-09-01"
+# Im Dashboard angelegte Variablen bleiben bei jedem Deploy erhalten (sonst löscht Wrangler sie).
+keep_vars = true
 
 [assets]
 directory = "./public"
@@ -16,7 +18,7 @@ class_name = "TournamentDO"
 tag = "v1"
 new_sqlite_classes = ["TournamentDO"]
 
-# Geheimnisse (nicht hier eintragen, sondern im Cloudflare-Dashboard unter Einstellungen > Variablen und Geheimnisse):
+# Geheimnisse (nicht hier eintragen, sondern im Cloudflare-Dashboard unter Einstellungen > Variablen und Geheimnisse, Typ „Geheimnis“):
 #   CREATE_KEY = beliebiges langes Passwort. Nur wer es kennt, darf Turniere anlegen.
 
 # Vorschauen pro Pull Request (Cloudflare Worker Previews, Workflow .github/workflows/preview.yml).
