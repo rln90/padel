@@ -23,6 +23,6 @@ echo "engine-diff: $(node engine-diff.js 600 2>&1 | tail -1)"
 for t in v36 zeit courtnames sec bk rules helperui; do echo "$t: $(node $t.js 2>&1 | grep -E 'FEHLER|ALLES OK|JS-Fehler' | tr '\n' ' ' | cut -c1-200)"; done
 SRV=$(cd .. && node tools/build-server.js --check 2>&1 | tail -1; node tests/server/functional.test.mjs 2>&1 | tail -1; node tests/server/sim.test.mjs 80 2>&1 | tail -1 | cut -c1-260; node tests/server/fuzz.test.mjs 40 2>&1 | tail -1 | cut -c1-200)
 echo "server: $SRV"
-ONL=$(cd .. && for m in yes no wait; do node tests/online/ui-online.test.mjs $m 2>&1 | tail -1; done; node tools/build.js --check)
+ONL=$(cd .. && for m in yes no wait; do node tests/online/ui-online.test.mjs $m 2>&1 | tail -1; done; node tests/online/ui-komfort.test.mjs 2>&1 | tail -1; node tools/build.js --check)
 echo "online: $(echo $ONL)"
 echo "ENDE2"

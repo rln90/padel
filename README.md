@@ -71,3 +71,13 @@ Im Warteraum steht unter dem Spielerlink ein QR-Code, später im Organisator-Ber
 | Prüfung Sicherung | Simulation: bei jedem Lauf mehrfach sichern, wiederherstellen, Stand vergleichen (586 Rundläufe); `npm run test:backup` im Browser |
 
 Grenzen der Sicherung: Das Protokoll der Änderungen und offene Ausscheiden-Anfragen werden nicht gesichert. Dateien über 400 KB werden abgelehnt. Das Wiederherstellen legt immer ein neues Turnier an, es überschreibt nichts.
+
+## Komfort für Spieler (Phase 6)
+| Funktion | Verhalten |
+|---|---|
+| Mein Stand | Im Feld „Dein Spiel“: Platz, Punkte, Siege/Niederlagen und Games aus der Tabelle. Auch für ausgeschiedene Spieler |
+| Meine Spiele | Aufklappbare Liste aller eigenen Spiele mit Gegner und Ergebnis (Sieg/Niederlage), offene Spiele mit Platz. Bei Zusatzspielen der Hinweis, für wen sie zählen |
+| Hinweis bei neuem Spiel | Wird ein eigenes Spiel angesetzt, erscheint oben „Dein nächstes Spiel steht“ mit Gegner und Platz, der Seitentitel bekommt „●“, und Android-Handys vibrieren. Beim Neuladen der Seite gibt es keinen Hinweis auf schon bekannte Spiele |
+| Endstand teilen | Nach dem Turnier: „Endstand teilen“ nutzt die Teilen-Funktion des Geräts, sonst kopiert es den Text (Plätze, Punkte, Games, Link, 7 Tage abrufbar) |
+
+Grenzen: Der Hinweis wirkt nur, solange die Seite geöffnet ist (auch im Hintergrund-Tab, dort wird alle 15 Sekunden geprüft). Echte Benachrichtigungen bei geschlossener Seite (Web-Push) gibt es nicht. Prüfung: `tests/online/ui-komfort.test.mjs` (Teil von `npm run test:online`).
