@@ -90,3 +90,14 @@ Grenzen: Der Hinweis wirkt nur, solange die Seite geöffnet ist (auch im Hinterg
 | Spieleransicht | Oben die blaue Karte „Dein nächstes Spiel“ (Gegner groß, Platz als gelbe Pille, Uhrzeit, Ergebniseingabe), darunter die gelbe Platzierungskarte, dann Tabelle, Runde, Spielplan; Regeln und Ausscheiden unten |
 | Organisator | Spielerliste kompakt (Name lesbar, „Bearbeiten“ klappt Feld und Knöpfe auf); „Selbst mitspielen“ steht unter dem Organisator-Bereich |
 | Test | `npm run test:layout`: lange Namen, vier Bildschirmbreiten, hell und dunkel, kein Seitenüberlauf |
+
+## Einheitlichkeit und Geräte (Phase 8)
+| Bereich | Regel |
+|---|---|
+| Schrift | Skala 12 / 14 / 16 px für Text, Überschriften 20 bis 34 px, große Zahlen 54/64 px. Gewichte 400, 500, 600. Eingaben immer mindestens 16 px, damit iOS nicht hineinzoomt |
+| Abstände | Raster 4 / 8 / 12 / 16 / 24 px. Feld und Knopf darunter immer 16 px, in aufklappbaren Karten genauso (Ursache des früheren Fehlers: Abstände per `gap` an `<details>` greifen nicht in jedem Browser) |
+| Knöpfe | Alle 44 px hoch, 16 px Schrift, auf dem Handy füllen sie die Zeile |
+| Geräte | Standardmodus mit `lang="de"`, `viewport-fit=cover` (iPhone-Ränder), `color-scheme` und `theme-color` hell/dunkel, einheitliche Eingabefelder und Auswahllisten ohne Systemstil, Zoom-Sperre der Textgröße abgestellt |
+| Test | `npm run test:konsistenz` (30 Prüfungen) |
+
+Geprüft wurde in Chromium (Android-nah). WebKit (iOS Safari) und Firefox lassen sich in dieser Umgebung nicht starten; dort gilt nur der Schutz durch die obigen Regeln, ein Test auf echten Geräten steht aus.
