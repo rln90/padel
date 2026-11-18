@@ -111,3 +111,7 @@ Geprüft wurde in Chromium (Android-nah). WebKit (iOS Safari) und Firefox lassen
 | Test | `npm run test:angriff` (212 Prüfungen): kaputte Eingaben, gefälschte Zugänge, Ansturm auf 24 Plätze, Ergebnis-Manipulation, Überflutung, feindliche Namen im Browser, Laptop aus, schlechtes Netz |
 
 Betrieb mit Laptop als Organisator: der Stand liegt auf dem Server (Cloudflare), nicht auf dem Laptop. Der Laptop kann ausgeschaltet werden; Ansetzen, Ergebnisse und Tabelle laufen weiter. Der Organisator-Zugang steckt im Organisator-Link und wird zusätzlich im Browser gemerkt. Link sichern (z. B. an sich selbst schicken): mit ihm gibt es den Zugang auf jedem Gerät zurück.
+
+## Obskure Fälle (Phase 10)
+`npm run test:obskur` (63 Prüfungen, echter Browser): gesperrter Browserspeicher, falsche Handy-Uhr, Serverfehler (502-HTML, leer, kein JSON, 429, Abbruch, hängend), 320 px / 150 % / 200 % / Querformat / Desktop, zwei Tabs, seltsame Ziffern, Kopieren gesperrt, Code-Eingabe, extreme Namen, Mitternacht, Größtturnier (24 Spieler, 20 Runden, 12 Plätze, Sicherung < 110 KB).
+Gefunden und behoben: Das Code-Feld auf der Startseite akzeptierte nur 6 Zeichen; jetzt auch Leerzeichen, Bindestriche, Kleinschreibung und ein eingefügter ganzer Link.
