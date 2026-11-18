@@ -55,7 +55,7 @@ jobs:
       - name: Browser-Tests
         run: |
           set -e
-          for t in e2e audit csp qr backup generalprobe layout; do
+          for t in e2e audit csp qr backup generalprobe layout konsistenz; do
             echo "== $t"
             node tests/online/$t.mjs
           done
