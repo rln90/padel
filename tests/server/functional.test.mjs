@@ -203,8 +203,17 @@ const NAMES=['Anna','Ben','Cem','Dora','Emil','Fay','Gero','Hanna'];
   let last=0;for(let i=0;i<700;i++){last=(await c2('POST',T(r.json.code)+'/leave',{token:'p_x'})).status;if(last===429)break}
   ok(last===429,'Schreib-Begrenzung greift ('+last+')');
   const e3=makeEnv({}),c3=client(e3);const r3=await c3('POST','/api/t',{headers:{'x-create-key':'geheim'},body:{}});
-  let s=0;for(let i=0;i<40;i++){s=(await c3('POST',T(r3.json.code)+'/join',{headers:{'cf-connecting-ip':'1.2.3.4'},body:{name:'N'+i}})).status;if(s===429)break}
-  ok(s===429,'Beitritts-Begrenzung je Adresse ('+s+')');
+  const IP={'cf-connecting-ip':'1.2.3.4'};let okc=0;for(let i=0;i<24;i++)if((await c3('POST',T(r3.json.code)+'/join',{headers:IP,body:{name:'N'+i}})).status===200)okc++;
+  ok(okc===24,'24 ehrliche Beitritte von einer Adresse (WLAN) werden nicht gebremst ('+okc+')');
+  let s=0;for(let i=0;i<80;i++){s=(await c3('POST',T(r3.json.code)+'/join',{headers:IP,body:{name:'<'+i}})).status;if(s===429)break}
+  ok(s===429,'Beitritts-Begrenzung je Adresse zählt nur Fehlversuche ('+s+')');
+  /* Ein Störer mit eigenem Zugang bremst nur sich selbst, nicht die anderen und nicht den Organisator */
+  const e4=makeEnv({}),c4=client(e4);const r4=await c4('POST','/api/t',{headers:{'x-create-key':'geheim'},body:{}});
+  const ja=await c4('POST',T(r4.json.code)+'/join',{headers:{'cf-connecting-ip':'5.5.5.1'},body:{name:'Gut'}}),jb=await c4('POST',T(r4.json.code)+'/join',{headers:{'cf-connecting-ip':'5.5.5.2'},body:{name:'Boese'}});
+  let l4=0;for(let i=0;i<300;i++){l4=(await c4('POST',T(r4.json.code)+'/rename',{token:jb.json.token,headers:{'cf-connecting-ip':'5.5.5.2'},body:{name:'B'+(i%5)}})).status;if(l4===429)break}
+  ok(l4===429,'Störer wird nach seinem Kontingent gebremst ('+l4+')');
+  const rg=await c4('POST',T(r4.json.code)+'/rename',{token:ja.json.token,headers:{'cf-connecting-ip':'5.5.5.1'},body:{name:'Gut2'}});ok(rg.status===200,'Ehrlicher Spieler weiter bedienbar ('+rg.status+')');
+  const ra=await c4('POST',T(r4.json.code)+'/admin/add',{token:r4.json.adminKey,headers:{'cf-connecting-ip':'5.5.5.9'},body:{name:'Neu'}});ok(ra.status===200,'Organisator weiter bedienbar ('+ra.status+')');
 }
 // ---- Ablauf nach 7 Tagen
 {

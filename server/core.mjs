@@ -7,7 +7,9 @@ export const TTL=7*864e5;             // Turnier wird 7 Tage nach der letzten Ä
 export const CODE_RE=/^[ABCDEFGHJKMNPQRSTUVWXYZ2-9]{6}$/;
 const ALPHA='ABCDEFGHJKMNPQRSTUVWXYZ23456789',B64='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
 const MAXP=24,MINP=4;
-const LIM={writePerMin:600,readPerMin:6000,joinPerIp:30,joinWindow:10*60e3};
+/* Grenzen je Minute. Jeder Absender hat sein eigenes Kontingent (Organisator, jeder Spieler, jede Adresse ohne Zugang),
+   damit ein einzelner Störer niemanden sonst ausbremst. Zusätzlich eine Decke für alle zusammen; der Organisator zählt dort nicht mit. */
+const LIM={admin:{w:600,r:3000},player:{w:120,r:600},ip:{w:90,r:600},all:{w:1500,r:12000},maxKeys:2000,joinFailPerIp:60,joinWindow:10*60e3};
 
 class Err extends Error{constructor(status,err,msg){super(msg);this.status=status;this.err=err;this.msg=msg}}
 const bad=(msg,err='eingabe')=>new Err(422,err,msg);
@@ -39,6 +41,7 @@ export function cleanCfg(input,base,E){
   take('dur',v=>DURS.includes(v));
   take('brk',v=>BRKS.includes(v));
   take('lim',v=>typeof v==='boolean');
+  take('closed',v=>typeof v==='boolean');
   take('draw',v=>typeof v==='boolean');
   take('ov',v=>['no','yes','wait'].includes(v));
   take('lead',v=>isInt(v,0,2));
@@ -54,7 +57,7 @@ export function cleanCfg(input,base,E){
   if(c.ov!=='yes')c.lead=0;
   return c;
 }
-const DEFAULT_CFG={R:5,courts:2,dur:20,brk:5,lim:true,draw:true,ov:'wait',lead:0,wu:0,t0:null,cn:[],auto:'reported',grace:120};
+const DEFAULT_CFG={R:5,courts:2,dur:20,brk:5,lim:true,draw:true,ov:'wait',lead:0,wu:0,t0:null,cn:[],auto:'reported',grace:120,closed:false};
 
 export const ROUTE_KEYS=()=>Object.keys(ROUTES);
 
@@ -62,7 +65,7 @@ export class Tournament{
   constructor(data=null,opts={}){
     this.now=opts.now||Date.now;this.rand=opts.rand||defaultRand;
     this.E=createEngine();this.m=null;this.corrupt=false;
-    this.rlW=[];this.rlR=[];this.joins=new Map();
+    this.rl=new Map();this.rlAll={w:[],r:[]};this.joins=new Map();
     if(data){
       this.m=data;
       if(data.S){if(this.E.okState(data.S))this.E.S=data.S;else this.corrupt=true}
@@ -80,9 +83,10 @@ export class Tournament{
       if(route==='POST init')return this.ok(this.init(req.body,req.code));
       if(!this.m)throw new Err(404,'nicht_gefunden','Dieses Turnier gibt es nicht (mehr).');
       if(this.corrupt)throw new Err(500,'beschaedigt','Der Turnierstand ist beschädigt.');
-      this.limit(req);
+      let who;
+      try{who=this.auth(req.token,route==='GET state')}catch(e){this.limit(req,{role:'none'},req.ip);throw e}
+      this.limit(req,who,req.ip);
       this.tick();
-      const who=this.auth(req.token,route==='GET state');
       const h=this.routes[route];
       if(!h)throw new Err(404,'unbekannt','Unbekannter Pfad.');
       const body=req.method==='POST'?(isObj(req.body)?req.body:{}):{};
@@ -95,11 +99,19 @@ export class Tournament{
     }
   }
   ok(body){return{status:200,body:{ok:true,...body},dirty:this.dirty,wipe:this.wipe}}
-  limit(req){
-    const t=this.now(),w=req.method==='POST',a=w?this.rlW:this.rlR,max=w?LIM.writePerMin:LIM.readPerMin;
-    while(a.length&&a[0]<t-60e3)a.shift();
-    if(a.length>=max)throw new Err(429,'zu_viele','Zu viele Anfragen. Bitte kurz warten.');
-    a.push(t);
+  limit(req,who,ip){
+    const t=this.now(),w=req.method==='POST',k=who.role==='admin'?'admin':who.role==='player'?'p'+who.pid:'ip:'+(ip||'-');
+    const lim=who.role==='admin'?LIM.admin:who.role==='player'?LIM.player:LIM.ip;
+    let e=this.rl.get(k);if(!e){e={w:[],r:[]};this.rl.set(k,e);if(this.rl.size>LIM.maxKeys)for(const x of this.rl.keys()){if(x!==k){this.rl.delete(x);break}}}
+    const trim=a=>{while(a.length&&a[0]<t-60e3)a.shift()};
+    const mine=w?e.w:e.r;trim(mine);
+    if(mine.length>=(w?lim.w:lim.r))throw new Err(429,'zu_viele','Zu viele Anfragen von diesem Gerät. Bitte kurz warten.');
+    if(who.role!=='admin'){
+      const all=w?this.rlAll.w:this.rlAll.r;trim(all);
+      if(all.length>=(w?LIM.all.w:LIM.all.r))throw new Err(429,'zu_viele','Gerade sehr viel los. Bitte kurz warten.');
+      all.push(t);
+    }
+    mine.push(t);
   }
   auth(token,soft){
     if(token==null||token==="")return{role:'none'};
@@ -242,6 +254,23 @@ function playerById(t,pid){if(!Number.isInteger(pid))throw bad('Ungültiger Spie
 function nameFree(t,name,exceptPid){return !t.m.players.some(p=>p.id!==exceptPid&&sameName(p.name,name))}
 function newToken(t){return 'p_'+b64(t.rand(24))}
 
+function joinNew(t,c,b,m){
+    const name=cleanName(b.name);
+    if(name===null)throw bad('Bitte einen Namen mit 1 bis 24 Zeichen eingeben (ohne < oder >).','name');
+    const ex=m.players.find(p=>sameName(p.name,name));
+    if(ex){
+      if(!ex.released)throw new Err(409,'name_vergeben','Dieser Name ist schon vergeben. Bitte einen anderen wählen oder den Organisator fragen.');
+      const token=newToken(t);ex.hash=sha256(token);ex.released=false;t.commit({role:'player',pid:ex.id},'claim',ex.id);
+      return{pid:ex.id,token,name:ex.name,claimed:true};
+    }
+    if(m.cfg.closed)throw new Err(409,'geschlossen','Die Anmeldung ist geschlossen. Bitte den Organisator fragen.');
+    needLobby(t);
+    if(m.players.length>=MAXP)throw new Err(409,'voll','Das Turnier ist voll (höchstens '+MAXP+' Spieler).');
+    const token=newToken(t),p={id:m.nextPid++,name,hash:sha256(token),released:false};
+    m.players.push(p);t.commit({role:'player',pid:p.id},'join',p.id);
+    return{pid:p.id,token,name};
+  }
+
 const ROUTES={
   'GET state'(c){
     const q=c.q,since=q.since!==undefined?+q.since:null;
@@ -253,22 +282,10 @@ const ROUTES={
     if(c.who.role==='player'){const p=playerById(this,c.who.pid);return{pid:p.id,name:p.name,resumed:true}}
     if(c.who.role==='admin')throw new Err(403,'verboten','Der Organisator beitritt über einen Spielernamen, nicht mit dem Admin-Zugang. Bitte den Admin-Link nicht mit anderen teilen.');
     // Versuche je Netzwerkadresse begrenzen
+    // Nur abgewiesene Versuche zählen (Tippfehler, vergebene Namen): ein ganzes Lokal teilt oft eine Adresse und soll nicht gesperrt werden
     const t=this.now(),ip=c.ip||'-',a=(this.joins.get(ip)||[]).filter(x=>x>t-LIM.joinWindow);
-    if(a.length>=LIM.joinPerIp)throw new Err(429,'zu_viele','Zu viele Versuche. Bitte ein paar Minuten warten.');
-    a.push(t);this.joins.set(ip,a);if(this.joins.size>500)for(const k of this.joins.keys()){this.joins.delete(k);break}
-    const name=cleanName(b.name);
-    if(name===null)throw bad('Bitte einen Namen mit 1 bis 24 Zeichen eingeben (ohne < oder >).','name');
-    const ex=m.players.find(p=>sameName(p.name,name));
-    if(ex){
-      if(!ex.released)throw new Err(409,'name_vergeben','Dieser Name ist schon vergeben. Bitte einen anderen wählen oder den Organisator fragen.');
-      const token=newToken(this);ex.hash=sha256(token);ex.released=false;this.commit({role:'player',pid:ex.id},'claim',ex.id);
-      return{pid:ex.id,token,name:ex.name,claimed:true};
-    }
-    needLobby(this);
-    if(m.players.length>=MAXP)throw new Err(409,'voll','Das Turnier ist voll (höchstens '+MAXP+' Spieler).');
-    const token=newToken(this),p={id:m.nextPid++,name,hash:sha256(token),released:false};
-    m.players.push(p);this.commit({role:'player',pid:p.id},'join',p.id);
-    return{pid:p.id,token,name};
+    if(a.length>=LIM.joinFailPerIp)throw new Err(429,'zu_viele','Zu viele Versuche. Bitte ein paar Minuten warten.');
+    try{return joinNew(this,c,b,m)}catch(e){if(e instanceof Err){a.push(t);this.joins.set(ip,a);if(this.joins.size>500)for(const k of this.joins.keys()){this.joins.delete(k);break}}throw e}
   },
   'POST rename'(c){
     this.need(c.who,'player');needLobby(this);
