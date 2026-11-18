@@ -75,6 +75,9 @@ A.type('#t0','25:99');await A.settle();
 ok(A.$('#t0').value==='','Ungültige Startzeit wird geleert (wie in der Offline-Einrichtung)');
 A.type('#t0','18:30');A.type('[data-d=cn0]','Center');A.type('[data-d=cn1]','Nord');await A.click('[data-act=config]');await A.settle(8);
 ok(/gespeichert/.test(A.text('#onlmsg')),'Einstellungen gespeichert');
+await A.click('[data-act=lock]');await A.settle(8);
+ok(A.st().D.cfg.closed===true&&/Anmeldung wieder öffnen/.test(A.text('#onl')),'Organisator schließt die Anmeldung (Knopf wechselt)');
+await A.click('[data-act=lock]');await A.settle(8);ok(A.st().D.cfg.closed===false&&/Anmeldung schließen/.test(A.text('#onl')),'Organisator öffnet die Anmeldung wieder');
 await P.Anna.poll();
 
 /* Entwurf bleibt beim Abruf erhalten */

@@ -101,3 +101,13 @@ Grenzen: Der Hinweis wirkt nur, solange die Seite geöffnet ist (auch im Hinterg
 | Test | `npm run test:konsistenz` (30 Prüfungen) |
 
 Geprüft wurde in Chromium (Android-nah). WebKit (iOS Safari) und Firefox lassen sich in dieser Umgebung nicht starten; dort gilt nur der Schutz durch die obigen Regeln, ein Test auf echten Geräten steht aus.
+
+## Störer und Betrieb (Phase 9)
+| Thema | Stand |
+|---|---|
+| Kontingente | Jeder Absender hat eigene Grenzen je Minute (Spieler 120 Schreib-/600 Lese-Anfragen, Organisator 600/3000, Adresse ohne Zugang 90/600) plus eine Decke für alle (Organisator zählt dort nicht). Ein Störer bremst nur sich selbst. Vorher teilten sich alle ein Kontingent: ein Spieler konnte mit 600 Anfragen pro Minute alle und den Organisator aussperren |
+| Beitritt | Zählt je Adresse nur Fehlversuche (60 je 10 Minuten). Ein Lokal mit gemeinsamem WLAN (eine Adresse) kann also 24 Spieler anmelden, auch mit Tippfehlern |
+| Anmeldung schließen | Knopf im Warteraum. Danach tritt niemand mehr über den Link bei, der Organisator trägt weiter selbst ein. Gegen Fantasienamen von Störern: schließen, Störer entfernen |
+| Test | `npm run test:angriff` (212 Prüfungen): kaputte Eingaben, gefälschte Zugänge, Ansturm auf 24 Plätze, Ergebnis-Manipulation, Überflutung, feindliche Namen im Browser, Laptop aus, schlechtes Netz |
+
+Betrieb mit Laptop als Organisator: der Stand liegt auf dem Server (Cloudflare), nicht auf dem Laptop. Der Laptop kann ausgeschaltet werden; Ansetzen, Ergebnisse und Tabelle laufen weiter. Der Organisator-Zugang steckt im Organisator-Link und wird zusätzlich im Browser gemerkt. Link sichern (z. B. an sich selbst schicken): mit ihm gibt es den Zugang auf jedem Gerät zurück.

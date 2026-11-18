@@ -1754,7 +1754,7 @@ function lobby(){
     h+=`<section class="panel"><h2>${adm?"Selbst mitspielen":"Beitreten"}</h2>
       <div class="field"><label for="nameIn">${adm?"Dein Spielername":"Dein Name"}</label><input id="nameIn" data-d="name" maxlength="24" autocomplete="nickname" placeholder="Name eingeben"></div>
       <div class="actions">${btn("join",adm?"Als Spieler eintragen":"Beitreten")}</div>
-      <p class="hint">${adm?"Als Organisator trägst du Ergebnisse immer ein. Mit einem Spielernamen spielst du selbst mit.":"Der Organisator kann deinen Namen später ändern."}</p></section>`;
+      <p class="hint">${adm?"Als Organisator trägst du Ergebnisse immer ein. Mit einem Spielernamen spielst du selbst mit.":D.cfg.closed?"Die Anmeldung ist geschlossen. Bitte den Organisator fragen.":"Der Organisator kann deinen Namen später ändern."}</p></section>`;
   }else{
     h+=`<section class="panel"><h2>Du bist dabei</h2>
       <div class="field"><label for="renIn">Dein Name</label><input id="renIn" data-d="ren" maxlength="24" value="${esc(D.players[mi].name)}"></div>
@@ -1763,7 +1763,7 @@ function lobby(){
   }
   h+=`<section class="panel"><div class="head"><h2>Spieler</h2><span class="meta">${n} von 24${n<4?", mindestens 4":""}</span></div>
     ${n?`<ul class="plist">${D.players.map((p,i)=>playerLi(p,i,adm,mi)).join("")}</ul>`:'<p class="hint">Noch niemand eingetragen.</p>'}
-    ${adm?`<div class="field"><label for="addIn">Spieler selbst eintragen</label><div class="linkrow"><input id="addIn" data-d="add" maxlength="24" placeholder="Name">${btn("add","Hinzufügen",{q:true})}</div></div>`:""}</section>`;
+    ${adm?`<div class="actions">${btn("lock",D.cfg.closed?"Anmeldung wieder öffnen":"Anmeldung schließen",{q:true})}</div><p class="hint">${D.cfg.closed?"Die Anmeldung ist geschlossen: niemand kann mehr über den Link beitreten. Du kannst weiter Spieler selbst eintragen.":"Wenn alle da sind, schließe die Anmeldung. Dann kann niemand mehr unerwünscht beitreten."}</p><div class="field"><label for="addIn">Spieler selbst eintragen</label><div class="linkrow"><input id="addIn" data-d="add" maxlength="24" placeholder="Name">${btn("add","Hinzufügen",{q:true})}</div></div>`:""}</section>`;
   h+=`<section class="panel">${rulesBox()}</section>`;
   if(adm)h+=configPanel(n)+`<section class="panel"><div class="actions">${sure("start","start","Turnier starten","Wirklich starten? Danach kann niemand mehr beitreten.",{attr:n<4?"disabled":""})}</div>
     <p class="hint">${n<4?"Zum Start braucht es mindestens 4 Spieler.":"Beim Start werden Runde 1 oder die ersten Spiele ausgelost."}</p></section>`;
@@ -2040,6 +2040,7 @@ const ACT={
     const t=g("t0").trim();if(t==="")cfg.t0=null;else{const v=tparse(t);if(v==null){say("Die Startzeit bitte als hh:mm eintragen, z. B. 18:30.",true);return}cfg.t0=v}
     if(!await call("/admin/config",{cfg},"admin"))return;say("Einstellungen gespeichert.");await refresh();
   },
+  async lock(){if(!await call("/admin/config",{cfg:{closed:!D.cfg.closed}},"admin"))return;await refresh()},
   async courts(){
     const cn=readCourts(S&&S.courts||0);
     if(!await call("/admin/config",{cfg:{cn}},"admin"))return;say("Platznamen gespeichert.");await refresh();
