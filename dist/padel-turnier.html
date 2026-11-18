@@ -97,6 +97,8 @@ table{width:100%;border-collapse:collapse;font-size:15px;font-variant-numeric:ta
 th,td{padding:9px 8px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
 th{font-size:13px;font-weight:500;color:var(--muted);border-bottom-color:var(--edge)}
 th.nm,td.nm{text-align:left;width:100%}
+td.nm{white-space:normal;overflow-wrap:anywhere;min-width:96px;line-height:1.25}
+th.rk0,td.rk{width:1%}
 table.cmpt{width:100%}
 .cmpt th.l,.cmpt td.l{text-align:left}
 .cmpt th{white-space:normal;vertical-align:bottom;line-height:1.2}
@@ -129,7 +131,7 @@ tr.sel td{font-weight:600;color:var(--court)}
 select:disabled{opacity:.55;cursor:not-allowed}
 td.bk{text-align:left;white-space:normal}
 .bkt{margin-top:8px}
-.plan{display:grid;grid-template-columns:40px repeat(var(--cols),minmax(84px,1fr));gap:6px;min-width:calc(40px + var(--cols)*90px)}
+.plan{display:grid;grid-template-columns:40px repeat(var(--cols),minmax(112px,1fr));gap:6px;min-width:calc(40px + var(--cols)*118px)}
 .tm{position:sticky;left:0;z-index:1;background:var(--paper);align-self:center;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
 .ph{text-align:center;font-size:13px;color:var(--muted);padding-bottom:2px}
 .rh{grid-column:1/-1;display:flex;justify-content:flex-start;align-items:baseline;gap:12px;margin-top:8px;padding-top:10px;border-top:1px solid var(--line);font-weight:600}
@@ -145,7 +147,7 @@ td.bk{text-align:left;white-space:normal}
 .cell .tag{font-size:11px;line-height:1.25;color:var(--muted)}
 .cell .tag span{display:block}
 .cell .pl{display:flex;justify-content:space-between;gap:6px}
-.cell .pl span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cell .pl span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;overflow-wrap:anywhere;line-height:1.25}
 .cell .pl b{font-weight:500;font-variant-numeric:tabular-nums}
 .cell .pl.w{color:var(--court);font-weight:600}
 .cell .pl.w b{font-weight:600}
@@ -182,6 +184,16 @@ summary{cursor:pointer;font-weight:500;padding:9px 0}
 .rules ul{margin:10px 0 0;padding-left:20px;color:var(--muted);font-size:14px}
 .rules li+li{margin-top:6px}
 
+/* Schmale Bildschirme: Ergebnis zweizeilig, jeder Spieler mit seinem Feld, lange Namen bleiben lesbar */
+@media (max-width:560px){
+  .m{grid-template-columns:minmax(0,1fr) 64px;grid-template-areas:"a sa" "b sb";gap:6px 12px}
+  .m>:nth-child(1){grid-area:a;text-align:left}
+  .m>:nth-child(2){grid-area:sa}
+  .m>:nth-child(3){display:none}
+  .m>:nth-child(4){grid-area:sb}
+  .m>:nth-child(5){grid-area:b}
+  .m .a,.m .b{overflow-wrap:break-word;hyphens:auto;line-height:1.25}
+}
 @media (max-width:480px){
   h1{font-size:26px}
   .panel{padding:16px}
@@ -1085,7 +1097,7 @@ function render0(){
   }
   if(VIEW){
     $("#app").innerHTML=`<div id="champ" aria-live="polite"></div>
-    <section class="panel"><div class="head"><h2 id="rh"></h2><span class="meta" id="prog"></span></div><div id="mine"></div><div class="cur" id="vcur"></div></section>
+    <section class="panel roundp"><div class="head"><h2 id="rh"></h2><span class="meta" id="prog"></span></div><div id="mine"></div><div class="cur" id="vcur"></div></section>
     <section class="section"><h2>Tabelle</h2><div class="wrap" id="tab"></div><p class="legend" id="leg"></p><div class="actions"><button class="quiet more" id="morecol" aria-expanded="false" onclick="toggleCols()">Games und Buchholz zeigen</button><button class="quiet" onclick="copyTable()">Tabelle kopieren</button><span class="status" id="cpst" role="status"></span></div><textarea id="cpbox" class="cpbox" hidden readonly aria-label="Tabelle als Text"></textarea></section>
     <section class="section"><h2>Spielplan</h2><div class="wrap" id="plan"></div><p class="legend">Zeiten sind Richtwerte, inklusive Wechselzeit, und können sich verschieben. Hervorgehobene Felder laufen gerade.</p></section>`;
     renderViewer();return;

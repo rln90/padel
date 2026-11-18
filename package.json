@@ -16,6 +16,7 @@
     "test:csp": "node tests/online/csp.mjs",
     "test:probe": "node tests/online/generalprobe.mjs",
     "test:qr": "node tests/online/qr.mjs",
+    "test:layout": "node tests/online/layout.mjs",
     "test:backup": "node tests/online/backup.mjs"
   },
   "devDependencies": {

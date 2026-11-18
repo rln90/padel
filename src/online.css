@@ -38,3 +38,40 @@ body.onl-me .mine>label,body.onl-me .mine>select{display:none}
 .mylist .mt{grid-column:1/-1;font-size:13px;opacity:.75}
 .mylist .mr{text-align:right}
 .panel.final .sum{margin:4px 0 10px}
+[hidden]{display:none!important}
+.field.wide{grid-column:1/-1}
+.cnl{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.cnl input{min-width:0}
+
+/* Spieleransicht: Karte für das nächste Spiel und Platzierung */
+.hero{background:var(--court);color:var(--on-court);border-radius:14px;padding:22px 20px;display:flex;flex-direction:column;gap:6px}
+.hero .hk{margin:0;font-size:14px;font-weight:500;opacity:.85}
+.hero .hg{margin:8px 0 0;font-size:15px;opacity:.85}
+.hero .ho{font:600 34px/1.08 var(--display);margin:0;overflow-wrap:anywhere;hyphens:auto;text-wrap:balance}
+.hero .hw{margin:10px 0 2px;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+.hero .pill{background:var(--ball);color:var(--on-ball);font-weight:700;font-size:16px;padding:7px 14px;border-radius:999px;overflow-wrap:anywhere}
+.hero .hz{font-size:16px;font-weight:600}
+.hero .hin{background:var(--surface);color:var(--ink);border-radius:10px;padding:12px 14px;margin-top:10px}
+.hero .hin .sum{margin:0 0 6px}
+.hero .hh{margin:8px 0 0;font-size:14px;opacity:.85}
+.rankc{background:var(--ball);color:var(--on-ball);border-radius:14px;padding:18px 20px;display:flex;gap:18px;align-items:center}
+.rankc .rn{display:flex;flex-direction:column;align-items:center;line-height:1;min-width:76px}
+.rankc .rl{font-size:14px;font-weight:600}
+.rankc .rn b{font:600 64px/1 var(--display);font-variant-numeric:tabular-nums}
+.rankc .rv{font-size:14px}
+.rankc .rd{min-width:0;display:flex;flex-direction:column;gap:2px;font-size:15px}
+.rankc .rd p{margin:0}
+.rankc .rd .rname{font-weight:700;overflow-wrap:anywhere}
+.lastp{gap:4px}
+#livebar:not(:empty){border:0;padding:0 2px;color:var(--muted);font-size:13px;margin:-10px 0 0}
+body.onl-me #app>.roundp{order:3}
+body.onl-me #app>.section:nth-of-type(2){order:1}
+body.onl-me #app>.section:nth-of-type(3){order:4}
+@media (max-width:380px){.hero .ho{font-size:29px}.rankc .rn b{font-size:54px}}
+.pe>summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;cursor:pointer;font-weight:400}
+.pe>summary::-webkit-details-marker{display:none}
+.pe .pb{flex:0 0 auto;font-size:13px;color:var(--court);font-weight:600;padding:6px 10px;border:1px solid var(--edge);border-radius:8px}
+.pe[open] .pb{background:var(--tint)}
+.pe .pctl.full{flex-wrap:wrap;padding-bottom:10px}
+.pe .pctl.full input{flex:1 1 100%}
+.plist li.adm-li{padding:0}

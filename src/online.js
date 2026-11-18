@@ -128,7 +128,7 @@ function paintPanels(){
     if(!CODE)top+=landing();
     else if(!D)top+='<p class="hint wait0">Lädt …</p>';
     else if(D.status==="lobby")top+=lobby();
-    else{top+=finalPanel()+playerPanel()+adminPanel();bot=bottom()+`<section class="panel">${rulesBox()}</section>`}
+    else{top+=finalPanel()+(isAdm()&&myIdx()<0?adminPanel()+playerPanel():playerPanel()+adminPanel());bot=bottom()+`<section class="panel">${rulesBox()}</section>`}
     a.innerHTML=top;b.innerHTML=bot;paintFlash();
   });
   if(D&&D.status==="lobby"&&isAdm()&&q("#sum")){try{syncSetup()}catch(e){}}
@@ -196,15 +196,27 @@ function lobby(){
     <p class="hint">${n<4?"Zum Start braucht es mindestens 4 Spieler.":"Beim Start werden Runde 1 oder die ersten Spiele ausgelost."}</p></section>`;
   return h;
 }
+/* Ein Spieler im Organisator-Bereich: Name lesbar, Bearbeiten klappt Feld und Knöpfe auf */
+function pedit(p,badge,extra){
+  return`<details class="pe" data-k="pe${p.id}"${OPEN.has("pe"+p.id)?" open":""}><summary><span class="pn">${esc(p.name)}${badge}</span><span class="pb">Bearbeiten</span></summary><div class="pctl full"><input data-d="pn${p.id}" maxlength="24" value="${esc(p.name)}" aria-label="Name ${esc(p.name)}">${btn("prename","Speichern",{attr:'data-pid="'+p.id+'"'})}${extra||""}</div></details>`;
+}
 function playerLi(p,i,adm,mi){
   const badge=(i===mi?' <span class="gone">du</span>':"")+(p.released?' <span class="gone">Zugang frei</span>':"")+(!p.taken&&!p.released?' <span class="gone">vom Organisator eingetragen</span>':"");
   if(!adm)return`<li><span class="pn">${esc(p.name)}${badge}</span></li>`;
-  return`<li class="adm-li"><span class="pctl full"><input data-d="pn${p.id}" maxlength="24" value="${esc(p.name)}" aria-label="Name ${esc(p.name)}">${btn("prename","Ändern",{q:true,attr:'data-pid="'+p.id+'"'})}${btn("kick","Entfernen",{q:true,attr:'data-pid="'+p.id+'"'})}</span>${badge.trim()?`<span class="pn sub">${badge}</span>`:""}</li>`;
+  return`<li class="adm-li">${pedit(p,badge,btn("kick","Entfernen",{q:true,attr:'data-pid="'+p.id+'"'}))}</li>`;
 }
 
 /* Einstellungen (Warteraum): gleiche Felder und gleiche Berechnung wie in der Offline-Einrichtung (syncSetup) */
 const opts=(arr,cur)=>arr.map(([v,t])=>`<option value="${esc(v)}"${String(v)===String(cur)?" selected":""}>${esc(t)}</option>`).join("");
 const fld=(id,label,arr,cur,extra="")=>`<div class="field"${extra}><label for="${id}">${label}</label><select id="${id}" data-d="${id}">${opts(arr,cur)}</select></div>`;
+/* Ein Feld pro Platz (höchstens 12); nur so viele sichtbar, wie Plätze gebucht sind */
+function courtInputs(count,cn){
+  return`<div class="cnl" id="cnl">${Array.from({length:12},(_,i)=>`<input type="text" maxlength="24" autocomplete="off" data-d="cn${i}" placeholder="Platz ${i+1}" aria-label="Name Platz ${i+1}" value="${esc((cn||[])[i]||"")}"${i>=count?" hidden":""}>`).join("")}</div>`;
+}
+function readCourts(count){
+  const a=[];for(let i=0;i<Math.min(12,count);i++)a.push(val("cn"+i).trim());
+  while(a.length&&!a[a.length-1])a.pop();return a;
+}
 function configPanel(n){
   const c=D.cfg,N=Math.max(MINN,n),mx=Math.floor(N/2),R=validR(N,c.R),cc=Math.min(mx,c.courts);
   return`<details class="panel cfg"${OPEN.has("cfg")?" open":""} data-k="cfg"><summary>Einstellungen</summary>
@@ -230,7 +242,7 @@ function configPanel(n){
       ${fld("sec","Buchungssicherheit",[[50,"Knapp: reicht meist"],[75,"Normal: reicht fast immer"],[95,"Sicher: mit Reserve"]],75,c.ov==="no"?' id="secf" hidden':' id="secf"')}
     </div></fieldset>
     <fieldset class="grp"><legend>Namen und Ergebnisse</legend><div class="grid">
-      <div class="field"><label for="cn">Platznamen (optional, mit Komma)</label><input id="cn" data-d="cn" maxlength="120" placeholder="z. B. Center, Nord" value="${esc((c.cn||[]).join(", "))}"></div>
+      <div class="field wide" id="cnw"><label>Platznamen (optional)</label>${courtInputs(cc,c.cn)}</div>
       ${fld("auto","Ergebnisse",[["reported","Ein Spieler trägt ein, das gilt sofort"],["confirmed","Der Gegner bestätigt"],["off","Nur ich trage ein und setze an"]],c.auto)}
     </div></fieldset>
     <p class="hint">Bei „Ein Spieler trägt ein“ gilt jedes Ergebnis sofort, die nächsten Spiele werden automatisch angesetzt. Du kannst jedes Ergebnis jederzeit ändern.</p>
@@ -279,27 +291,40 @@ function playerPanel(){
   if(D.players[mi].out)return`<section class="panel"><h2>Du bist ausgeschieden</h2><p class="hint">Deine bisherigen Spiele zählen weiter. Danke fürs Mitspielen.</p>${standLine(mi)}</section>`;
   const G=gamesOf().filter(g=>g.m.a===mi||g.m.b===mi);
   const open=G.filter(g=>!done(g.m)),last=G.filter(g=>done(g.m)).slice(-1)[0];
-  let h=`<section class="panel mygame"><div class="head"><h2>Dein Spiel</h2><span class="meta">${esc(D.players[mi].name)}</span></div>`;
+  let h="";
   const ng=NEWG!==null?open.find(g=>g.m.gid===NEWG):null;
   if(ng){const nx=nextOf(mi),opp=S.names[ng.m.a===mi?ng.m.b:ng.m.a],where=nx&&nx.k!=null?" · "+cname(nx.k)+(T0()!=null?" ab "+tt(nx.i,S.dur+S.brk):""):"";
     h+=`<div class="newgame" role="alert"><span><b>Dein nächstes Spiel steht.</b> Gegen ${esc(opp)}${esc(where)}</span>${btn("seen","OK",{q:true})}</div>`}
-  h+=standLine(mi);
+  const nx=open.length?nextOf(mi):null;
+  h+=`<section class="hero mygame" aria-label="Dein Spiel">`;
   if(open.length){
-    const nx=nextOf(mi);
+    const g0=open[0],opp0=S.names[g0.m.a===mi?g0.m.b:g0.m.a];
+    h+=`<p class="hk">Dein nächstes Spiel</p><p class="hg">gegen</p><h2 class="ho">${esc(opp0)}</h2>`;
+    const pill=nx&&nx.k!=null?`<span class="pill">${esc(cname(nx.k))}</span>`:"",tm=nx&&T0()!=null?`<span class="hz">ab ${tt(nx.i,S.dur+S.brk)}</span>`:"";
+    if(pill||tm)h+=`<p class="hw">${pill}${tm}</p>`;
     h+=open.map((g,i)=>{const opp=S.names[g.m.a===mi?g.m.b:g.m.a];
-      const where=i===0&&nx?`${nx.k==null?"":esc(cname(nx.k))}${nx.k!=null&&T0()!=null?" · ab "+tt(nx.i,S.dur+S.brk):""}`:"";
-      return`<p class="sum">Gegen ${esc(opp)}${where?" · "+where:""}</p>`+gameRow(g,{})}).join("");
-    h+=`<p class="hint">Nach dem Spiel trägt einer von euch beiden das Ergebnis in Games ein.${D.cfg.auto==="confirmed"?" Der Gegner bestätigt es.":" Es gilt sofort."}${S.draw?"":" Unentschieden sind nicht erlaubt."}</p>`;
-  }else if(!last){
-    h+=`<p class="hint">${isOver()?"Alle Spiele sind gespielt.":"Noch nicht angesetzt. Dein nächstes Spiel erscheint hier automatisch."}</p>`;
-  }else if(!isOver())h+=`<p class="hint">Gerade kein offenes Spiel. Dein nächstes Spiel erscheint hier automatisch.</p>`;
+      return`<div class="hin">${i?`<p class="sum">Danach: gegen ${esc(opp)}</p>`:""}${gameRow(g,{})}</div>`}).join("");
+    h+=`<p class="hh">Nach dem Spiel trägt einer von euch beiden das Ergebnis in Games ein.${D.cfg.auto==="confirmed"?" Der Gegner bestätigt es.":" Es gilt sofort."}${S.draw?"":" Unentschieden sind nicht erlaubt."}</p>`;
+  }else{
+    h+=`<p class="hk">Dein Spiel</p><h2 class="ho">${isOver()?"Alle Spiele gespielt":last?"Gerade kein offenes Spiel":"Noch nicht angesetzt"}</h2><p class="hh">${isOver()?"Danke fürs Mitspielen.":"Dein nächstes Spiel erscheint hier automatisch."}</p>`;
+  }
+  h+=`</section>`+rankCard(mi);
+  let more="";
   if(last){
     const r=D.res[last.m.gid],other=r&&r.by!==TOK.pid&&r.st==="reported";
     const extra=other&&D.cfg.auto==="confirmed"?btn("confirm","Stimmt",{q:true,attr:'data-gid="'+last.m.gid+'"'})+btn("dispute","Stimmt nicht",{q:true,attr:'data-gid="'+last.m.gid+'"'}):"";
-    h+=`<details class="lastg" data-k="last"${OPEN.has("last")||other||(r&&r.st==="disputed")?" open":""}><summary>Letztes Ergebnis${last.locked?"":" (änderbar)"}</summary>${gameRow(last,{extra})}</details>`;
+    more+=`<details class="lastg" data-k="last"${OPEN.has("last")||other||(r&&r.st==="disputed")?" open":""}><summary>Letztes Ergebnis${last.locked?"":" (änderbar)"}</summary>${gameRow(last,{extra})}</details>`;
   }
-  if(G.length)h+=`<details class="lastg" data-k="mine"${OPEN.has("mine")?" open":""}><summary>Meine Spiele (${G.length})</summary>${myGames(mi,G)}</details>`;
-  return h+"</section>";
+  if(G.length)more+=`<details class="lastg" data-k="mine"${OPEN.has("mine")?" open":""}><summary>Meine Spiele (${G.length})</summary>${myGames(mi,G)}</details>`;
+  if(more)h+=`<section class="panel lastp">${more}</section>`;
+  return h;
+}
+/* Mein Platz in der Tabelle (groß, gelbe Karte) */
+function rankCard(mi){
+  let st;try{st=ranking()}catch(e){return""}
+  const me=st.find(x=>x.i===mi);if(!me)return"";
+  const pl=me.g?me.rk:"–";
+  return`<section class="rankc" aria-label="Deine Platzierung"><div class="rn"><span class="rl">Platz</span><b>${pl}</b><span class="rv">von ${st.length}</span></div><div class="rd"><p class="rname">${esc(D.players[mi].name)}</p>${me.g?`<p><b>${me.p}</b> ${me.p===1?"Punkt":"Punkte"}</p><p>${me.w} ${me.w===1?"Sieg":"Siege"}, ${me.l} ${me.l===1?"Niederlage":"Niederlagen"}${S.draw&&me.d?", "+me.d+" unentschieden":""}</p><p>Games ${me.gf}:${me.ga}</p>`:`<p>Noch kein Spiel gespielt.</p>`}</div></section>`;
 }
 /* Mein Platz in der Tabelle */
 function standLine(mi){
@@ -365,8 +390,9 @@ function bottom(){
       ${btn("export","Sicherung herunterladen",{q:true})}
       ${btn("copy","Link für Spieler kopieren",{q:true,attr:'data-text="'+esc(playerLink())+'"'})}${btn("copy","Organisator-Link kopieren",{q:true,attr:'data-text="'+esc(adminLink())+'"'})}</div>
       ${cand.length?`<div class="actions"><select data-d="dropsel" aria-label="Spieler ausscheiden lassen">${cand.map(x=>`<option value="${x.p.id}">${esc(x.p.name)}</option>`).join("")}</select>${sure("drop","drop","Ausscheiden lassen","Wirklich ausscheiden lassen?")}</div>`:""}
+      ${D.status==="running"&&S&&S.courts>0?`<details data-k="cnames"${OPEN.has("cnames")?" open":""}><summary>Platznamen ändern</summary>${courtInputs(S.courts,D.cfg.cn)}<div class="actions">${btn("courts","Platznamen speichern")}</div></details>`:""}
       <details data-k="qr"${OPEN.has("qr")?" open":""}><summary>QR-Code für Spieler</summary>${qrBox()}</details>
-      <details data-k="players"${OPEN.has("players")?" open":""}><summary>Spieler und Zugänge</summary><ul class="plist">${D.players.map((p,i)=>`<li><span class="pn">${esc(p.name)}${p.out?' <span class="gone">ausgeschieden</span>':""}${p.released?' <span class="gone">Zugang frei</span>':""}</span><span class="pctl"><input data-d="pn${p.id}" maxlength="24" value="${esc(p.name)}" aria-label="Name ${esc(p.name)}">${btn("prename","Ändern",{q:true,attr:'data-pid="'+p.id+'"'})}${p.taken?btn("release","Zugang freigeben",{q:true,attr:'data-pid="'+p.id+'"'}):""}</span></li>`).join("")}</ul></details>
+      <details data-k="players"${OPEN.has("players")?" open":""}><summary>Spieler und Zugänge</summary><ul class="plist">${D.players.map((p,i)=>`<li class="adm-li">${pedit(p,(p.out?' <span class="gone">ausgeschieden</span>':"")+(p.released?' <span class="gone">Zugang frei</span>':""),p.taken?btn("release","Zugang freigeben",{q:true,attr:'data-pid="'+p.id+'"'}):"")}</li>`).join("")}</ul></details>
       <div class="actions">${sure("end","end","Turnier beenden und löschen","Endgültig löschen?")}</div>
       <p class="hint">Das Turnier wird 7 Tage nach der letzten Änderung automatisch gelöscht. Wer die Tabelle behalten will, kopiert sie vorher mit „Tabelle kopieren“.</p></section>`;
   }
@@ -437,9 +463,13 @@ const ACT={
   async kick(e){if(!await call("/admin/kick",{pid:+e.dataset.pid},"admin"))return;await refresh()},
   async release(e){if(!await call("/admin/release",{pid:+e.dataset.pid},"admin"))return;say("Zugang freigegeben. Der Spieler trägt jetzt seinen Namen erneut ein.");await refresh()},
   async config(){
-    const g=k=>val(k),lim=g("lim")==="yes",cfg={R:+g("r"),courts:+g("c"),ov:g("ov"),lead:+g("lead")||0,lim,dur:+g("dur"),brk:+g("brk"),wu:+g("wu"),draw:lim&&g("draw")==="yes",auto:g("auto"),cn:g("cn").split(",").map(x=>x.trim()).filter(Boolean).slice(0,12)};
+    const g=k=>val(k),lim=g("lim")==="yes",cfg={R:+g("r"),courts:+g("c"),ov:g("ov"),lead:+g("lead")||0,lim,dur:+g("dur"),brk:+g("brk"),wu:+g("wu"),draw:lim&&g("draw")==="yes",auto:g("auto"),cn:readCourts(+g("c"))};
     const t=g("t0").trim();if(t==="")cfg.t0=null;else{const v=tparse(t);if(v==null){say("Die Startzeit bitte als hh:mm eintragen, z. B. 18:30.",true);return}cfg.t0=v}
     if(!await call("/admin/config",{cfg},"admin"))return;say("Einstellungen gespeichert.");await refresh();
+  },
+  async courts(){
+    const cn=readCourts(S&&S.courts||0);
+    if(!await call("/admin/config",{cfg:{cn}},"admin"))return;say("Platznamen gespeichert.");await refresh();
   },
   async start(){disarm();if(!await call("/admin/start",{},"admin"))return;await refresh()},
   async save(e){const gid=+e.dataset.gid,s=readScore(e);if(!s)return;const r=await call("/result",{gid,...s},"player");if(!r)return;say("Ergebnis gespeichert.");await refresh()},
@@ -480,12 +510,13 @@ document.addEventListener("keydown",ev=>{
   const k=ev.target.dataset.d;let a=null;
   if(k==="code")a="goto";else if(k==="ckey")a="create";else if(k==="name")a="join";else if(k==="ren")a="rename";else if(k==="add")a="add";
   else if(/^[AP]g\d+[ab]$/.test(k)){const r=ev.target.closest(".mw"),b=r&&r.querySelector("[data-act=save],[data-act=asave]");if(b&&!b.disabled)b.click();return}
+  else if(/^cn\d+$/.test(k)){const b=document.querySelector("[data-act=config],[data-act=courts]");if(b)b.click();return}
   else if(/^pn\d+$/.test(k)){const b=ev.target.parentElement.querySelector("[data-act=prename]");if(b)b.click();return}
   if(a){const b=document.querySelector('[data-act="'+a+'"]');if(b)b.click()}
 });
 document.addEventListener("change",ev=>{
   const e=ev.target;if(!e||!e.closest||!e.closest("details.cfg"))return;const k=e.dataset&&e.dataset.d;
-  try{if(k==="lim")limChange();else if(k==="t0")fixT0(e);else if(["r","c","ov","lead","dur","draw","brk","wu","sec"].includes(k))syncSetup()}catch(x){}
+  try{if(k==="lim")limChange();else if(k==="t0")fixT0(e);else if(k==="c"){const n=+e.value;document.querySelectorAll("#cnl [data-d^=cn]").forEach((x,i)=>{x.hidden=i>=n});syncSetup()}else if(["r","ov","lead","dur","draw","brk","wu","sec"].includes(k))syncSetup()}catch(x){}
 });
 document.addEventListener("toggle",ev=>{const d=ev.target;if(d&&d.dataset&&d.dataset.k){d.open?OPEN.add(d.dataset.k):OPEN.delete(d.dataset.k)}},true);
 

@@ -18,8 +18,8 @@ const g1=gamesOf(S).filter(m=>m.sa==null),inG=new Set(g1.flatMap(m=>[m.a,m.b])),
 for(const nm of names){const p=P[nm],has=inG.has(idx(nm));
   ok(!!p.$('.newgame')===has,'Erstes Spiel: Hinweis '+(has?'sichtbar':'nicht sichtbar')+' für '+nm);
   ok(has===/^● /.test(p.d.title),'Titel '+(has?'mit':'ohne')+' Markierung bei '+nm,p.d.title);
-  ok(/Noch kein Spiel gespielt/.test(p.text('.mygame')),'Stand vor dem ersten Ergebnis: '+nm);
-  ok(!has||/Meine Spiele \(1\)/.test(p.text('.mygame')),'Meine Spiele (1) bei '+nm)}
+  ok(/Noch kein Spiel gespielt/.test(p.text('.rankc')),'Stand vor dem ersten Ergebnis: '+nm);
+  ok(!has||/Meine Spiele \(1\)/.test(p.text('#onl')),'Meine Spiele (1) bei '+nm)}
 const A=P['Anna'],a=idx('Anna');
 if(inG.has(a)){const opp=S.names[g1.find(m=>m.a===a||m.b===a).a===a?g1.find(m=>m.a===a||m.b===a).b:g1.find(m=>m.a===a||m.b===a).a];
   ok(A.text('.newgame').includes(opp),'Hinweis nennt den Gegner ('+opp+')');
@@ -38,7 +38,7 @@ ok(open2.length>0,'Runde 2 angesetzt',open2.length);
 for(const nm of names){const p=P[nm],has=in2.has(idx(nm));ok(!!p.$('.newgame')===has,'Runde 2: Hinweis '+(has?'sichtbar':'nicht sichtbar')+' für '+nm)}
 // 4. Stand und Meine Spiele stimmen mit der Tabelle überein
 for(const nm of names){const p=P[nm],r=p.w.ranking().find(x=>x.i===idx(nm));
-  const t=p.text('.mygame .stand');ok(r.g===0?/Noch kein Spiel/.test(t):(t.includes('Platz '+r.rk+' von 5')&&t.includes(r.p+' Punkt')&&t.includes('Games '+r.gf+':'+r.ga)),'Mein Stand stimmt mit Tabelle: '+nm,t)}
+  const t=p.text('.rankc');ok(r.g===0?/Noch kein Spiel/.test(t):(p.$('.rankc .rn b').textContent===String(r.rk)&&t.includes('von 5')&&t.includes(r.p+' Punkt')&&t.includes('Games '+r.gf+':'+r.ga)),'Mein Stand stimmt mit Tabelle: '+nm,t)}
 {const p=P['Cem'],mi=idx('Cem');const det=p.$('details[data-k=mine]');ok(!!det,'Meine Spiele vorhanden');
   const mine=gamesOf(S).filter(m=>m.a===mi||m.b===mi),doneN=mine.filter(m=>m.sa!=null&&m.sb!=null);
   ok(p.$$('details[data-k=mine] li').length===mine.length,'Eine Zeile je eigenem Spiel ('+mine.length+')');
