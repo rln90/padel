@@ -1711,7 +1711,7 @@ function paintPanels(){
 function landing(){
   return`<section class="panel"><h2>Turnier beitreten</h2>
     <p class="hint">Den Code oder Link bekommst du vom Organisator.</p>
-    <div class="field"><label for="codeIn">Turniercode</label><input id="codeIn" data-d="code" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="z. B. K7MQ2X"></div>
+    <div class="field"><label for="codeIn">Turniercode</label><input id="codeIn" data-d="code" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="z. B. K7MQ2X"></div>
     <div class="actions">${btn("goto","Weiter")}</div></section>
     <details class="panel" id="newT"><summary>Neues Turnier anlegen (Organisator)</summary>
       <div class="field"><label for="ckey">Schlüssel</label><input id="ckey" data-d="ckey" type="password" autocomplete="off" placeholder="Schlüssel des Organisators"></div>
@@ -2003,7 +2003,7 @@ async function createWith(key,body,failMsg){
 async function refresh(){clearTimeout(pollT);await poll(true)}
 const ACT={
   arm(e){arm(e.dataset.key)},
-  async goto(){const c=(val("code")||"").trim().toUpperCase();if(!CODE_OK.test(c)){say("Bitte den Code mit 6 Zeichen eingeben (ohne 0, 1, I, L, O).",true);return}location.hash="#"+c},
+  async goto(){let c=(val("code")||"").trim().toUpperCase();const hm=c.match(/#([^\/\s?]+)/);if(hm)c=hm[1];c=c.replace(/[\s\-_.]/g,"");if(!CODE_OK.test(c)){say("Bitte den Code mit 6 Zeichen eingeben (ohne 0, 1, I, L, O).",true);return}location.hash="#"+c},
   async create(){
     const key=val("ckey");if(!key){say("Bitte den Schlüssel des Organisators eingeben.",true);return}
     await createWith(key,{cfg:{auto:"reported"}},"Das Anlegen hat nicht geklappt.");
