@@ -1298,10 +1298,10 @@ function toggleCols(){const t=$("#tab"),o=t.classList.toggle("open"),b=$("#morec
 function renderTable(){
   const st=ranking(),top=st.filter(s=>s.rk===1),dr=S.draw;
   const th=(t,ttl,x)=>`<th${x?' class="xc"':""} title="${ttl}">${t}</th>`;
-  $("#tab").innerHTML=`<table><thead><tr><th>Platz</th><th class="nm">Spieler</th>${th("Sp","Spiele")}${th("S","Siege")}${dr?th("U","Unentschieden"):""}${th("N","Niederlagen")}${th("Games","Games erzielt : kassiert",1)}${th("Diff","Game-Differenz")}${th("Bh","Buchholz: Summe der Punkte aller bisherigen Gegner",1)}${th("Pkt","Punkte")}</tr></thead><tbody>`+
+  $("#tab").innerHTML=`<table><thead><tr><th>Platz</th><th class="nm">Spieler</th>${th("Sp","Spiele")}${th("S","Siege")}${dr?th("U","Unentschieden"):""}${th("N","Niederlagen")}${th("Games","Games erzielt:kassiert",1)}${th("Diff","Game-Differenz")}${th("Bh","Buchholz: Summe der Punkte aller bisherigen Gegner",1)}${th("Pkt","Punkte")}</tr></thead><tbody>`+
     st.map(s=>{const rk=s.rk,lead=rk===1&&top.length<st.length&&s.g>0;
       return`<tr class="${lead?"lead":""}"><td class="rk">${rk}</td><td class="nm">${esc(s.nm)}${s.out?" <span class=\"gone\">ausgeschieden</span>":""}</td><td>${s.g}</td><td>${s.w}</td>${dr?`<td>${s.d}</td>`:""}<td>${s.l}</td><td class="xc">${s.gf}:${s.ga}</td><td>${sgn(s.gf-s.ga)}</td><td class="xc">${s.bh}</td><td class="pt">${s.p}</td></tr>`}).join("")+`</tbody></table>`;
-  $("#leg").textContent=`Sp Spiele, S Siege, ${dr?"U Unentschieden, ":""}N Niederlagen, Games erzielte : kassierte Games, Diff Game-Differenz, Bh Buchholz (Punkte der Gegner), Pkt Punkte. Bei Punktgleichheit entscheiden Direktvergleich, Game-Differenz, Buchholz, Siege und erzielte Games.`;
+  $("#leg").textContent=`Sp Spiele, S Siege, ${dr?"U Unentschieden, ":""}N Niederlagen, Games erzielt:kassiert, Diff Game-Differenz, Bh Buchholz (Punkte der Gegner), Pkt Punkte. Bei Punktgleichheit entscheiden Direktvergleich, Game-Differenz, Buchholz, Siege und erzielte Games.`;
 }
 function renderActions(){
   const ri=S.rounds.length-1,rd=S.rounds[ri],all=rd.m.concat(rd.x?[rd.x]:[]);
@@ -1897,14 +1897,14 @@ function rankCard(mi){
   let st;try{st=ranking()}catch(e){return""}
   const me=st.find(x=>x.i===mi);if(!me)return"";
   const pl=me.g?me.rk:"–";
-  return`<section class="rankc" aria-label="Deine Platzierung"><div class="rn"><span class="rl">Platz</span><b>${pl}</b><span class="rv">von ${st.length}</span></div><div class="rd"><p class="rname">${esc(D.players[mi].name)}</p>${me.g?`<p><b>${me.p}</b> ${me.p===1?"Punkt":"Punkte"}</p><p>${me.w} ${me.w===1?"Sieg":"Siege"}, ${me.l} ${me.l===1?"Niederlage":"Niederlagen"}${S.draw&&me.d?", "+me.d+" unentschieden":""}</p><p>Games ${me.gf}:${me.ga}</p>`:`<p>Noch kein Spiel gespielt.</p>`}</div></section>`;
+  return`<section class="rankc" aria-label="Deine Platzierung"><div class="rn"><span class="rl">Platz</span><b>${pl}</b><span class="rv">von ${st.filter(x=>!x.out).length}</span></div><div class="rd"><p class="rname">${esc(D.players[mi].name)}</p>${me.g?`<p><b>${me.p}</b> ${me.p===1?"Punkt":"Punkte"}</p><p>${me.w} ${me.w===1?"Sieg":"Siege"}, ${me.l} ${me.l===1?"Niederlage":"Niederlagen"}${S.draw&&me.d?", "+me.d+" unentschieden":""}</p><p>Games ${me.gf}:${me.ga}</p>`:`<p>Noch kein Spiel gespielt.</p>`}</div></section>`;
 }
 /* Mein Platz in der Tabelle */
 function standLine(mi){
   let st;try{st=ranking()}catch(e){return""}
   const me=st.find(x=>x.i===mi);if(!me)return"";
   if(!me.g)return`<p class="stand">Noch kein Spiel gespielt.</p>`;
-  return`<p class="stand"><b>Platz ${me.rk} von ${st.length}</b> · ${me.p} ${me.p===1?"Punkt":"Punkte"} · ${me.w} ${me.w===1?"Sieg":"Siege"}, ${me.l} ${me.l===1?"Niederlage":"Niederlagen"}${S.draw&&me.d?", "+me.d+" unentschieden":""} · Games ${me.gf}:${me.ga}</p>`;
+  return`<p class="stand"><b>Platz ${me.rk} von ${st.filter(x=>!x.out).length}</b> · ${me.p} ${me.p===1?"Punkt":"Punkte"} · ${me.w} ${me.w===1?"Sieg":"Siege"}, ${me.l} ${me.l===1?"Niederlage":"Niederlagen"}${S.draw&&me.d?", "+me.d+" unentschieden":""} · Games ${me.gf}:${me.ga}</p>`;
 }
 /* Alle eigenen Spiele mit Gegner und Ergebnis */
 function myGames(mi,G){

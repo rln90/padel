@@ -150,5 +150,17 @@ step('10 Größtturnier');
  const lay=await p.evaluate(()=>({sw:document.documentElement.scrollWidth,iw:innerWidth,tab:(()=>{const t=document.querySelector('#tab');return t.scrollWidth-t.clientWidth})()}));ok(lay.sw<=lay.iw+1&&lay.tab<=1,'Endtabelle mit 24 Spielern ohne Überlauf',lay);
  await p.close()}
 
+
+/* ===== 11. Platzanzeige nach Ausfall: "von N" zählt nur aktive Spieler ===== */
+step('11 Platzanzeige');
+{const T=await create();const tk={};for(const x of ['Anna','Ben','Cem','Dora','Emil','Fritz','Gerda','Hanna']){tk[x]=(await join(T.code,x)).j}
+ await P(T.code,'admin/config',T.adm,{cfg:{R:4,courts:2}});await P(T.code,'admin/start',T.adm,{});
+ const d=await P(T.code,'admin/drop',T.adm,{pid:tk.Ben.pid});ok(d.s===200,'Ausfall möglich',d.s);
+ const p=await phone({tag:'platz'});await p.addInitScript(([k,v])=>{try{localStorage.setItem(k,v)}catch(e){}},['padel-online-'+T.code,JSON.stringify({p:tk.Anna.token,a:null,pid:tk.Anna.pid})]);
+ await p.goto(BASE+'/#'+T.code);await p.waitForSelector('.rankc .rv',{timeout:15000});
+ ok((await p.textContent('.rankc .rv')).trim()==='von 7','Platzanzeige zählt nur aktive Spieler (8 angemeldet, 1 ausgeschieden: "von 7")',await p.textContent('.rankc .rv'));
+ const leg=await p.evaluate(()=>(document.querySelector('#leg')||{}).textContent||'');ok(!/ :/.test(leg),'Legende ohne Leerzeichen vor Doppelpunkt',leg.slice(0,120));
+ await p.close()}
+
 ok(errs.length===0,'Keine JS-Fehler im ganzen Test',errs.slice(0,4));
 await br.close();console.log(f?'FEHLER: '+f+' von '+n:'ALLES OK ('+n+' Prüfungen)');process.exit(f?1:0);
