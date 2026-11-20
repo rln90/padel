@@ -115,3 +115,6 @@ Betrieb mit Laptop als Organisator: der Stand liegt auf dem Server (Cloudflare),
 ## Obskure Fälle (Phase 10)
 `npm run test:obskur` (63 Prüfungen, echter Browser): gesperrter Browserspeicher, falsche Handy-Uhr, Serverfehler (502-HTML, leer, kein JSON, 429, Abbruch, hängend), 320 px / 150 % / 200 % / Querformat / Desktop, zwei Tabs, seltsame Ziffern, Kopieren gesperrt, Code-Eingabe, extreme Namen, Mitternacht, Größtturnier (24 Spieler, 20 Runden, 12 Plätze, Sicherung < 110 KB).
 Gefunden und behoben: Das Code-Feld auf der Startseite akzeptierte nur 6 Zeichen; jetzt auch Leerzeichen, Bindestriche, Kleinschreibung und ein eingefügter ganzer Link.
+
+## Feinschliff (Phase 11)
+Gefunden bei einem Durchlauf mit 9 Spielern (Ausfall, Zurücknehmen, Entscheidungsspiele): Die Platzanzeige "Platz 2 von 9" zählte einen ausgeschiedenen Spieler mit, obwohl nur 8 in der Wertung stehen; jetzt zählt sie nur aktive Spieler. Die Tabellenlegende hatte "Games erzielte : kassierte Games", jetzt "Games erzielt:kassiert". Prüfung 11 in `test:obskur` (66 Prüfungen).

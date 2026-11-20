@@ -453,10 +453,10 @@ function toggleCols(){const t=$("#tab"),o=t.classList.toggle("open"),b=$("#morec
 function renderTable(){
   const st=ranking(),top=st.filter(s=>s.rk===1),dr=S.draw;
   const th=(t,ttl,x)=>`<th${x?' class="xc"':""} title="${ttl}">${t}</th>`;
-  $("#tab").innerHTML=`<table><thead><tr><th>Platz</th><th class="nm">Spieler</th>${th("Sp","Spiele")}${th("S","Siege")}${dr?th("U","Unentschieden"):""}${th("N","Niederlagen")}${th("Games","Games erzielt : kassiert",1)}${th("Diff","Game-Differenz")}${th("Bh","Buchholz: Summe der Punkte aller bisherigen Gegner",1)}${th("Pkt","Punkte")}</tr></thead><tbody>`+
+  $("#tab").innerHTML=`<table><thead><tr><th>Platz</th><th class="nm">Spieler</th>${th("Sp","Spiele")}${th("S","Siege")}${dr?th("U","Unentschieden"):""}${th("N","Niederlagen")}${th("Games","Games erzielt:kassiert",1)}${th("Diff","Game-Differenz")}${th("Bh","Buchholz: Summe der Punkte aller bisherigen Gegner",1)}${th("Pkt","Punkte")}</tr></thead><tbody>`+
     st.map(s=>{const rk=s.rk,lead=rk===1&&top.length<st.length&&s.g>0;
       return`<tr class="${lead?"lead":""}"><td class="rk">${rk}</td><td class="nm">${esc(s.nm)}${s.out?" <span class=\"gone\">ausgeschieden</span>":""}</td><td>${s.g}</td><td>${s.w}</td>${dr?`<td>${s.d}</td>`:""}<td>${s.l}</td><td class="xc">${s.gf}:${s.ga}</td><td>${sgn(s.gf-s.ga)}</td><td class="xc">${s.bh}</td><td class="pt">${s.p}</td></tr>`}).join("")+`</tbody></table>`;
-  $("#leg").textContent=`Sp Spiele, S Siege, ${dr?"U Unentschieden, ":""}N Niederlagen, Games erzielte : kassierte Games, Diff Game-Differenz, Bh Buchholz (Punkte der Gegner), Pkt Punkte. Bei Punktgleichheit entscheiden Direktvergleich, Game-Differenz, Buchholz, Siege und erzielte Games.`;
+  $("#leg").textContent=`Sp Spiele, S Siege, ${dr?"U Unentschieden, ":""}N Niederlagen, Games erzielt:kassiert, Diff Game-Differenz, Bh Buchholz (Punkte der Gegner), Pkt Punkte. Bei Punktgleichheit entscheiden Direktvergleich, Game-Differenz, Buchholz, Siege und erzielte Games.`;
 }
 function renderActions(){
   const ri=S.rounds.length-1,rd=S.rounds[ri],all=rd.m.concat(rd.x?[rd.x]:[]);

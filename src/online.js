@@ -324,14 +324,14 @@ function rankCard(mi){
   let st;try{st=ranking()}catch(e){return""}
   const me=st.find(x=>x.i===mi);if(!me)return"";
   const pl=me.g?me.rk:"–";
-  return`<section class="rankc" aria-label="Deine Platzierung"><div class="rn"><span class="rl">Platz</span><b>${pl}</b><span class="rv">von ${st.length}</span></div><div class="rd"><p class="rname">${esc(D.players[mi].name)}</p>${me.g?`<p><b>${me.p}</b> ${me.p===1?"Punkt":"Punkte"}</p><p>${me.w} ${me.w===1?"Sieg":"Siege"}, ${me.l} ${me.l===1?"Niederlage":"Niederlagen"}${S.draw&&me.d?", "+me.d+" unentschieden":""}</p><p>Games ${me.gf}:${me.ga}</p>`:`<p>Noch kein Spiel gespielt.</p>`}</div></section>`;
+  return`<section class="rankc" aria-label="Deine Platzierung"><div class="rn"><span class="rl">Platz</span><b>${pl}</b><span class="rv">von ${st.filter(x=>!x.out).length}</span></div><div class="rd"><p class="rname">${esc(D.players[mi].name)}</p>${me.g?`<p><b>${me.p}</b> ${me.p===1?"Punkt":"Punkte"}</p><p>${me.w} ${me.w===1?"Sieg":"Siege"}, ${me.l} ${me.l===1?"Niederlage":"Niederlagen"}${S.draw&&me.d?", "+me.d+" unentschieden":""}</p><p>Games ${me.gf}:${me.ga}</p>`:`<p>Noch kein Spiel gespielt.</p>`}</div></section>`;
 }
 /* Mein Platz in der Tabelle */
 function standLine(mi){
   let st;try{st=ranking()}catch(e){return""}
   const me=st.find(x=>x.i===mi);if(!me)return"";
   if(!me.g)return`<p class="stand">Noch kein Spiel gespielt.</p>`;
-  return`<p class="stand"><b>Platz ${me.rk} von ${st.length}</b> · ${me.p} ${me.p===1?"Punkt":"Punkte"} · ${me.w} ${me.w===1?"Sieg":"Siege"}, ${me.l} ${me.l===1?"Niederlage":"Niederlagen"}${S.draw&&me.d?", "+me.d+" unentschieden":""} · Games ${me.gf}:${me.ga}</p>`;
+  return`<p class="stand"><b>Platz ${me.rk} von ${st.filter(x=>!x.out).length}</b> · ${me.p} ${me.p===1?"Punkt":"Punkte"} · ${me.w} ${me.w===1?"Sieg":"Siege"}, ${me.l} ${me.l===1?"Niederlage":"Niederlagen"}${S.draw&&me.d?", "+me.d+" unentschieden":""} · Games ${me.gf}:${me.ga}</p>`;
 }
 /* Alle eigenen Spiele mit Gegner und Ergebnis */
 function myGames(mi,G){
