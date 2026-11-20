@@ -3,7 +3,7 @@
 "use strict";
 const API="/api/t",CODE_OK=/^[ABCDEFGHJKMNPQRSTUVWXYZ2-9]{6}$/;
 let lastChange=Date.now();let seq=0,applied=0,CODE=null,TOK={p:null,a:null,pid:null},D=null,ver=-1,netErr="",flash=null,armed=null,armT=null,pollT=null,fails=0,inflight=false,gen=0;
-const OPEN=new Set(),mem={};
+const OPEN=new Set(),mem={};let OV=null; // OV: Übersicht der offenen Turniere (nur Startseite, nur im Arbeitsspeicher)
 
 /* ---------- Hilfen ---------- */
 const q=s=>document.querySelector(s);
@@ -57,7 +57,7 @@ const sure=(key,act,label,sureLabel,o={})=>armed===key?btn(act,sureLabel,{danger
 function route(){
   const m=/^#([A-Za-z0-9]{6})(?:\/(a_[A-Za-z0-9_-]{20,60}))?$/.exec(location.hash||"");
   const code=m?m[1].toUpperCase():null;
-  gen++;clearTimeout(pollT);D=null;ver=-1;netErr="";flash=null;disarm();fails=0;
+  gen++;clearTimeout(pollT);D=null;OV=null;ver=-1;netErr="";flash=null;disarm();fails=0;
   if(!code||!CODE_OK.test(code)){CODE=null;TOK={p:null,a:null,pid:null};paintAll();if(location.hash.length>1)say("Dieser Code ist ungültig. Bitte prüfen.",true);return}
   CODE=code;TOK=loadTok(code);
   if(m[2]){TOK.a=m[2];saveTok();try{history.replaceState(null,"","#"+code)}catch(e){}}
@@ -141,16 +141,33 @@ function paintPanels(){
 }
 
 /* Startseite: Code eingeben oder neues Turnier anlegen */
+/* Übersicht der offenen Turniere (Startseite, mit dem Schlüssel des Organisators) */
+const OVST={lobby:"Warteraum",running:"Läuft",finished:"Beendet"};
+const ovAgo=(t,now)=>{const m=Math.max(0,Math.round((now-t)/6e4));return m<1?"gerade eben":m<60?"vor "+m+" min":m<1440?"vor "+Math.round(m/60)+" Std.":"vor "+Math.round(m/1440)+" Tagen"};
+const ovDay=t=>{const d=new Date(t);return["So","Mo","Di","Mi","Do","Fr","Sa"][d.getDay()]+", "+d.getDate()+"."+(d.getMonth()+1)+"."};
+function ovList(){
+  if(!OV)return"";
+  if(!OV.items.length)return'<p class="hint ovnone">Keine offenen Turniere.</p>';
+  return'<p class="hint">Turniere, die noch nicht beendet oder gelöscht wurden. Jedes wird 7 Tage nach der letzten Änderung automatisch gelöscht. Die Zeit „zuletzt geändert“ kann bis zu 5 Minuten nachgehen.</p><ul class="ovl">'+OV.items.map(x=>`<li><div class="ovh"><b>${esc(x.code)}</b><span class="gone">${esc(OVST[x.st]||x.st)}</span></div>
+    <p class="hint">${+x.n||0} Spieler · zuletzt geändert ${ovAgo(x.t,OV.now)} · wird automatisch gelöscht am ${ovDay(x.e)}</p>
+    <div class="actions">${btn("view","Öffnen",{q:true,attr:'data-code="'+esc(x.code)+'"'})}${sure("del"+x.code,"delt","Löschen","Wirklich löschen?",{attr:'data-code="'+esc(x.code)+'"'})}</div></li>`).join("")+"</ul>";
+}
+async function ovCall(method,path,key,body){
+  try{const r=await fetch(path,{method,headers:{"x-create-key":key,"content-type":"application/json"},cache:"no-store",body:method==="POST"?JSON.stringify(body||{}):undefined});
+    const j=await r.json().catch(()=>null);return{s:r.status,j:j&&typeof j==="object"?j:{ok:false,msg:"Unerwartete Antwort vom Server."}}}
+  catch(e){return{s:0,j:{ok:false,msg:"Keine Verbindung zum Server."}}}
+}
 function landing(){
   return`<section class="panel"><h2>Turnier beitreten</h2>
     <p class="hint">Den Code oder Link bekommst du vom Organisator.</p>
     <div class="field"><label for="codeIn">Turniercode</label><input id="codeIn" data-d="code" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="z. B. K7MQ2X"></div>
     <div class="actions">${btn("goto","Weiter")}</div></section>
-    <details class="panel" id="newT"><summary>Neues Turnier anlegen (Organisator)</summary>
+    <details class="panel" id="newT" data-k="newT"${OPEN.has("newT")?" open":""}><summary>Neues Turnier anlegen (Organisator)</summary>
       <div class="field"><label for="ckey">Schlüssel</label><input id="ckey" data-d="ckey" type="password" autocomplete="off" placeholder="Schlüssel des Organisators"></div>
-      <div class="actions">${btn("create","Turnier anlegen")}</div>
+      <div class="actions">${btn("create","Turnier anlegen")}${btn("overview",OV?"Liste aktualisieren":"Offene Turniere anzeigen",{q:true})}</div>
       <p class="hint">Den Schlüssel legst du bei der Einrichtung des Servers fest. Danach bekommst du den Code für die Spieler und deinen Organisator-Link.</p>
-      <details class="restore"><summary>Aus Sicherung wiederherstellen</summary>
+      ${ovList()}
+      <details class="restore" data-k="restore"${OPEN.has("restore")?" open":""}><summary>Aus Sicherung wiederherstellen</summary>
         <p class="hint">Lädt eine zuvor heruntergeladene Sicherung als neues Turnier. Es bekommt einen neuen Code und neue Links; alle Spieler tragen ihren Namen wieder ein und sind dann sofort wieder dabei.</p>
         <div class="field"><label for="rfile">Sicherungsdatei (.json)</label><input id="rfile" type="file" accept=".json,application/json"></div>
         <div class="actions">${btn("restore","Wiederherstellen",{q:true})}</div></details></details>`;
@@ -198,10 +215,12 @@ function lobby(){
     ${n?`<ul class="plist">${D.players.map((p,i)=>playerLi(p,i,adm,mi)).join("")}</ul>`:'<p class="hint">Noch niemand eingetragen.</p>'}
     ${adm?`<div class="actions">${btn("lock",D.cfg.closed?"Anmeldung wieder öffnen":"Anmeldung schließen",{q:true})}</div><p class="hint">${D.cfg.closed?"Die Anmeldung ist geschlossen: niemand kann mehr über den Link beitreten. Du kannst weiter Spieler selbst eintragen.":"Wenn alle da sind, schließe die Anmeldung. Dann kann niemand mehr unerwünscht beitreten."}</p><div class="field"><label for="addIn">Spieler selbst eintragen</label><div class="linkrow"><input id="addIn" data-d="add" maxlength="24" placeholder="Name">${btn("add","Hinzufügen",{q:true})}</div></div>`:""}</section>`;
   h+=`<section class="panel">${rulesBox()}</section>`;
-  if(adm)h+=configPanel(n)+`<section class="panel"><div class="actions">${sure("start","start","Turnier starten","Wirklich starten? Danach kann niemand mehr beitreten.",{attr:n<4?"disabled":""})}</div>
+  if(adm)h+=configPanel(n)+planPanel()+`<section class="panel"><div class="actions">${sure("start","start","Turnier starten","Wirklich starten? Danach kann niemand mehr beitreten.",{attr:n<4?"disabled":""})}</div>
     <p class="hint">${n<4?"Zum Start braucht es mindestens 4 Spieler.":"Beim Start werden Runde 1 oder die ersten Spiele ausgelost."}</p></section>`;
   return h;
 }
+/* Spielplan-Vorschau im Warteraum: folgt den Einstellungen, auch bevor sie gespeichert sind (gefüllt von syncSetup → renderPlan) */
+const planPanel=()=>`<section class="panel"><h2>Spielplan</h2><p class="hint">Vorschau, wie sich die Spiele auf Plätze und Zeitblöcke verteilen. Sie folgt den Einstellungen oben, auch vor dem Speichern. Die Namen erscheinen nach dem Start.</p><div class="wrap" id="plan"></div><p class="legend" id="pleg"></p></section>`;
 /* Ein Spieler im Organisator-Bereich: Name lesbar, Bearbeiten klappt Feld und Knöpfe auf */
 function pedit(p,badge,extra){
   return`<details class="pe" data-k="pe${p.id}"${OPEN.has("pe"+p.id)?" open":""}><summary><span class="pn">${esc(p.name)}${badge}</span><span class="pb">Bearbeiten</span></summary><div class="pctl full"><input data-d="pn${p.id}" maxlength="24" value="${esc(p.name)}" aria-label="Name ${esc(p.name)}">${btn("prename","Speichern",{attr:'data-pid="'+p.id+'"'})}${extra||""}</div></details>`;
@@ -226,7 +245,7 @@ function readCourts(count){
 function configPanel(n){
   const c=D.cfg,N=Math.max(MINN,n),mx=Math.floor(N/2),R=validR(N,c.R),cc=Math.min(mx,c.courts);
   return`<details class="panel cfg"${OPEN.has("cfg")?" open":""} data-k="cfg"><summary>Einstellungen</summary>
-    <input type="hidden" id="n" value="${N}"><p id="pleg" hidden></p>
+    <input type="hidden" id="n" value="${N}">
     ${n<MINN?`<p class="hint">Die Berechnung unten gilt für ${MINN} Spieler, bis genug Spieler eingetragen sind.</p>`:""}
     <fieldset class="grp"><legend>Runden und Plätze</legend><div class="grid">
       ${fld("r","Runden",roundOpts(N).map(r=>[r,r+" Runden"]),R)}
@@ -441,6 +460,19 @@ const ACT={
     const key=val("ckey");if(!key){say("Bitte den Schlüssel des Organisators eingeben.",true);return}
     await createWith(key,{cfg:{auto:"reported"}},"Das Anlegen hat nicht geklappt.");
   },
+  async overview(){
+    const key=val("ckey");if(!key){say("Bitte den Schlüssel des Organisators eingeben.",true);return}
+    const r=await ovCall("GET","/api/overview",key);
+    if(!r.j.ok){say(r.j.msg||"Die Übersicht konnte nicht geladen werden.",true);return}
+    OV={items:Array.isArray(r.j.items)?r.j.items:[],now:+r.j.now||Date.now()};paintPanels();
+  },
+  async delt(e){
+    disarm();const key=val("ckey"),code=e.dataset.code;if(!key){say("Bitte den Schlüssel des Organisators eingeben.",true);paintPanels();return}
+    const r=await ovCall("POST","/api/overview/delete",key,{code});
+    if(!r.j.ok){say(r.j.msg||"Das Löschen hat nicht geklappt.",true);paintPanels();return}
+    say("Turnier "+code+" gelöscht.");await ACT.overview();
+  },
+  view(e){location.hash="#"+e.dataset.code},
   async restore(){
     const key=val("ckey");if(!key){say("Bitte oben den Schlüssel des Organisators eingeben.",true);return}
     const inp=q("#rfile"),f=inp&&inp.files&&inp.files[0];if(!f){say("Bitte eine Sicherungsdatei auswählen.",true);return}

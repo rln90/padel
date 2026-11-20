@@ -16,10 +16,11 @@ export class Limiter{
   }
   /* Ein Anlege-Versuch. keyOk: war der Schlüssel richtig? Gibt {allowed,reason} zurück.
      Wer zu oft falsch geraten hat, wird gesperrt, auch mit richtigem Schlüssel (sonst ließe sich der Schlüssel erraten). */
-  attempt(ip,keyOk){
+  attempt(ip,keyOk,counts=true){
     const f=this._recent(this.fails,ip,LIMITS.failWindow);
     if(f.length>=LIMITS.failMax)return{allowed:false,reason:'gesperrt'};
     if(!keyOk){this._push(this.fails,ip,f);return{allowed:false,reason:'schluessel'}}
+    if(!counts)return{allowed:true}; // Übersicht und Löschen: nur falsche Schlüssel werden gezählt
     const c=this._recent(this.creates,ip,LIMITS.createWindow);
     if(c.length>=LIMITS.createMax)return{allowed:false,reason:'zu_viele'};
     this._push(this.creates,ip,c);
