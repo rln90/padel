@@ -18,6 +18,28 @@ async function readJson(request,max=MAX_BODY){
   if(!text)return{body:{}};
   try{return{body:JSON.parse(text)}}catch(e){return{err:fail(400,'json','Die Anfrage ist kein gültiges JSON.')}}
 }
+
+// Schlüssel des Organisators prüfen und Raten bremsen (pro IP, siehe server/limiter.mjs). Gibt eine Fehlerantwort zurück oder null.
+// counts: zählt als neues Turnier (Anlegen); Übersicht und Löschen zählen nur falsche Schlüssel.
+async function gate(request,env,counts){
+  const key=env.CREATE_KEY;
+  if(!key&&env.ALLOW_OPEN_CREATE!=='1')return fail(503,'nicht_eingerichtet','Der Server ist noch nicht eingerichtet (CREATE_KEY fehlt).');
+  const keyOk=!key||sha256(request.headers.get('x-create-key')||'')===sha256(key);
+  let verdict;
+  if(env.LIMITER){
+    try{
+      const res=await env.LIMITER.get(env.LIMITER.idFromName('anlegen')).fetch('https://do/attempt',{method:'POST',body:JSON.stringify({ip:request.headers.get('cf-connecting-ip')||'-',keyOk,counts})});
+      verdict=await res.json();
+    }catch(e){return fail(503,'limiter','Bitte gleich noch einmal versuchen.')}
+  }else verdict=keyOk?{allowed:true}:{allowed:false,reason:'schluessel'};
+  if(!verdict.allowed){
+    if(verdict.reason==='gesperrt')return J(429,{ok:false,err:'gesperrt',msg:'Zu viele falsche Schlüssel. Bitte in 15 Minuten noch einmal versuchen.'},{'retry-after':'900'});
+    if(verdict.reason==='zu_viele')return J(429,{ok:false,err:'zu_viele',msg:'Zu viele neue Turniere in kurzer Zeit. Bitte später noch einmal versuchen.'},{'retry-after':'3600'});
+    return fail(403,'schluessel','Falscher Schlüssel.');
+  }
+  return null;
+}
+const dirStub=env=>env&&env.VERZEICHNIS?env.VERZEICHNIS.get(env.VERZEICHNIS.idFromName('verzeichnis')):null;
 const bearer=r=>{const h=r.headers.get('authorization')||'';return h.startsWith('Bearer ')?h.slice(7).trim():null};
 
 export default{
@@ -25,25 +47,27 @@ export default{
     const url=new URL(request.url),p=url.pathname.replace(/\/+$/,'')||'/';
     if(!p.startsWith('/api/')&&p!=='/api')return env.ASSETS?env.ASSETS.fetch(request):fail(404,'unbekannt','Nicht gefunden.');
     if(p==='/api/health')return J(200,{ok:true});
+    // Übersicht der offenen Turniere und Löschen (nur mit Schlüssel des Organisators)
+    if(p==='/api/overview'||p==='/api/overview/delete'){
+      const del=p==='/api/overview/delete';
+      if(request.method!==(del?'POST':'GET'))return fail(405,'methode',del?'Nur POST.':'Nur GET.');
+      const g=await gate(request,env,false);if(g)return g;
+      const dir=dirStub(env);if(!dir)return fail(503,'nicht_eingerichtet','Die Übersicht ist auf diesem Server nicht eingerichtet.');
+      try{
+        if(!del){const res=await dir.fetch('https://do/list');return J(200,await res.json())}
+        const r=await readJson(request);if(r.err)return r.err;
+        const code=String(r.body&&r.body.code||'').toUpperCase();
+        if(!CODE_RE.test(code))return fail(400,'code','Ungültiger Turniercode.');
+        await env.TOURNAMENT.get(env.TOURNAMENT.idFromName(code)).fetch('https://do/__loeschen',{method:'POST',headers:{'x-code':code}});
+        await dir.fetch('https://do/del',{method:'POST',body:JSON.stringify({code})}); // auch wenn das Turnier selbst schon weg war
+        log('info','geloescht',{code});
+        return J(200,{ok:true});
+      }catch(e){log('error','uebersicht',{fehler:e&&e.message});return fail(503,'uebersicht','Das hat nicht geklappt. Bitte gleich noch einmal versuchen.')}
+    }
     // Turnier anlegen (nur mit Schlüssel des Organisators)
     if(p==='/api/t'){
       if(request.method!=='POST')return fail(405,'methode','Nur POST.');
-      const key=env.CREATE_KEY;
-      if(!key&&env.ALLOW_OPEN_CREATE!=='1')return fail(503,'nicht_eingerichtet','Der Server ist noch nicht eingerichtet (CREATE_KEY fehlt).');
-      const keyOk=!key||sha256(request.headers.get('x-create-key')||'')===sha256(key);
-      // Raten des Schlüssels und Massen-Anlegen bremsen (pro IP, siehe server/limiter.mjs)
-      let verdict;
-      if(env.LIMITER){
-        try{
-          const res=await env.LIMITER.get(env.LIMITER.idFromName('anlegen')).fetch('https://do/attempt',{method:'POST',body:JSON.stringify({ip:request.headers.get('cf-connecting-ip')||'-',keyOk})});
-          verdict=await res.json();
-        }catch(e){return fail(503,'limiter','Bitte gleich noch einmal versuchen.')}
-      }else verdict=keyOk?{allowed:true}:{allowed:false,reason:'schluessel'};
-      if(!verdict.allowed){
-        if(verdict.reason==='gesperrt')return J(429,{ok:false,err:'gesperrt',msg:'Zu viele falsche Schlüssel. Bitte in 15 Minuten noch einmal versuchen.'},{'retry-after':'900'});
-        if(verdict.reason==='zu_viele')return J(429,{ok:false,err:'zu_viele',msg:'Zu viele neue Turniere in kurzer Zeit. Bitte später noch einmal versuchen.'},{'retry-after':'3600'});
-        return fail(403,'schluessel','Falscher Schlüssel.');
-      }
+      const g=await gate(request,env,true);if(g)return g;
       const r=await readJson(request,MAX_RESTORE);if(r.err)return r.err;
       for(let k=0;k<6;k++){
         const code=newCode(),stub=env.TOURNAMENT.get(env.TOURNAMENT.idFromName(code));
@@ -70,9 +94,31 @@ export class LimiterDO{
   constructor(state,env){this.l=new Limiter(()=>(env&&env.NOW?env.NOW():Date.now()))}
   async fetch(request){
     let b={};try{b=JSON.parse(await request.text()||'{}')}catch(e){}
-    const v=this.l.attempt(String(b.ip||'-').slice(0,64),b.keyOk===true);
+    const v=this.l.attempt(String(b.ip||'-').slice(0,64),b.keyOk===true,b.counts!==false);
     if(v.reason==='gesperrt'||v.reason==='zu_viele')log('warn','limiter',{grund:v.reason});
     return J(200,v);
+  }
+}
+
+// Verzeichnis aller offenen Turniere (eine einzige Instanz). Jedes Turnier meldet sich bei Statuswechsel, geänderter Spielerzahl
+// und sonst höchstens alle 5 Minuten; beim Löschen wird es abgemeldet. Enthält nur Code, Status, Zahlen und Zeiten.
+export class DirectoryDO{
+  constructor(state,env){this.state=state;this.now=()=>(env&&env.NOW?env.NOW():Date.now())}
+  async fetch(request){
+    const path=new URL(request.url).pathname;let b={};
+    if(request.method==='POST'){try{b=JSON.parse(await request.text()||'{}')}catch(e){}}
+    const st=this.state.storage,code=String(b.code||'');
+    if(path==='/set'){
+      if(!CODE_RE.test(code))return fail(400,'code','Ungültiger Turniercode.');
+      await st.put('t:'+code,{code,st:String(b.st||'').slice(0,12),n:Math.max(0,+b.n|0),c:+b.c||0,t:+b.t||0,e:+b.e||0});return J(200,{ok:true});
+    }
+    if(path==='/del'){if(CODE_RE.test(code))await st.delete('t:'+code);return J(200,{ok:true})}
+    if(path==='/list'){
+      const all=await st.list({prefix:'t:'}),now=this.now(),items=[];
+      for(const [k,v] of all){if(v.e&&v.e<now-36e5){await st.delete(k);continue}items.push(v)} // längst abgelaufen: Eintrag war verwaist
+      items.sort((x,y)=>y.t-x.t);return J(200,{ok:true,items,now});
+    }
+    return fail(404,'unbekannt','Unbekannter Pfad.');
   }
 }
 
@@ -82,18 +128,35 @@ export class TournamentDO{
     // env.NOW und env.RAND gibt es nur in Tests (Zeitreise, feste Zufallswerte)
     this.opts={now:()=>(env&&env.NOW?env.NOW():Date.now()),rand:env&&env.RAND?env.RAND:undefined};
     this.t=new Tournament(null,this.opts);
+    this.ann=null;
     state.blockConcurrencyWhile(async()=>{const d=await state.storage.get('t');this.t=new Tournament(d||null,this.opts)});
+  }
+  // Beim Verzeichnis melden (nie die Antwort an den Spieler gefährden)
+  async announce(force,code){
+    const dir=dirStub(this.env);if(!dir)return;
+    try{
+      if(code){await dir.fetch('https://do/del',{method:'POST',body:JSON.stringify({code})});this.ann=null;return}
+      const sm=this.t.summary();if(!sm)return;
+      const key=sm.st+'|'+sm.n,at=this.t.now();
+      if(!force&&this.ann&&this.ann.key===key&&at-this.ann.at<300e3)return;
+      await dir.fetch('https://do/set',{method:'POST',body:JSON.stringify(sm)});this.ann={key,at};
+    }catch(e){log('warn','verzeichnis',{fehler:e&&e.message})}
   }
   async fetch(request){
     const url=new URL(request.url),path=url.pathname.slice(1);
+    if(path==='__loeschen'&&request.method==='POST'){ // nur vom Worker nach Schlüsselprüfung aufgerufen (nicht über /api/t erreichbar)
+      const code=this.t.exists()?this.t.m.code:(request.headers.get('x-code')||'');
+      await this.state.storage.deleteAll();try{await this.state.storage.deleteAlarm()}catch(e){}
+      this.t=new Tournament(null,this.opts);await this.announce(true,code);return J(200,{ok:true});
+    }
     let body;
     if(request.method==='POST'){try{body=JSON.parse(await request.text()||'{}')}catch(e){body={}}}
     const q={};for(const [k,v] of url.searchParams)q[k]=v;
     const res=this.t.handle({method:request.method,path,token:request.headers.get('x-token')||null,body,query:q,ip:request.headers.get('x-ip')||'',code:request.headers.get('x-code')||''});
     if(res.status===500){const e=this.t.lastError;log('error','intern',{route:request.method+' '+path,fehler:e&&e.message,stack:e&&e.stack?String(e.stack).split('\n').slice(0,4).join(' | '):undefined})}
     try{
-      if(res.wipe){await this.state.storage.deleteAll();this.t=new Tournament(null,this.opts)}
-      else if(res.dirty){await this.state.storage.put('t',this.t.toJSON());await this.state.storage.setAlarm(this.t.expiresAt())}
+      if(res.wipe){const code=request.headers.get('x-code')||'';await this.state.storage.deleteAll();this.t=new Tournament(null,this.opts);await this.announce(true,code)}
+      else if(res.dirty){await this.state.storage.put('t',this.t.toJSON());await this.state.storage.setAlarm(this.t.expiresAt());await this.announce(false)}
     }catch(e){
       // Speichern fehlgeschlagen: Stand aus dem Speicher neu laden, damit nichts Halbes im Arbeitsspeicher bleibt
       log('error','speichern',{route:request.method+' '+path,fehler:e&&e.message});
@@ -104,7 +167,7 @@ export class TournamentDO{
   }
   async alarm(){
     if(!this.t.exists())return;
-    if(this.t.now()>=this.t.expiresAt()){await this.state.storage.deleteAll();this.t=new Tournament(null,this.opts)}
+    if(this.t.now()>=this.t.expiresAt()){const code=this.t.m.code;await this.state.storage.deleteAll();this.t=new Tournament(null,this.opts);await this.announce(true,code)}
     else await this.state.storage.setAlarm(this.t.expiresAt());
   }
 }

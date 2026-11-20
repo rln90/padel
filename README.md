@@ -119,6 +119,33 @@ Gefunden und behoben: Das Code-Feld auf der Startseite akzeptierte nur 6 Zeichen
 ## Feinschliff (Phase 11)
 Gefunden bei einem Durchlauf mit 9 Spielern (Ausfall, Zurücknehmen, Entscheidungsspiele): Die Platzanzeige "Platz 2 von 9" zählte einen ausgeschiedenen Spieler mit, obwohl nur 8 in der Wertung stehen; jetzt zählt sie nur aktive Spieler. Die Tabellenlegende hatte "Games erzielte : kassierte Games", jetzt "Games erzielt:kassiert". Prüfung 11 in `test:obskur` (66 Prüfungen).
 
+## Reihenuntersuchung (Phase 12)
+- `SIM_WIDE=1 node tests/server/sim.test.mjs 300`: Simulation über 4–24 Spieler, 3–10 Runden, 1–12 Plätze (auch mehr als nötig), alle Zeiten (Dauer, Pause, Aufwärmen, Vorsprung, Startzeit), mit und ohne Unentschieden. 600 Läufe ohne Verstoß (Spielzahl am Ende gleich, keine Doppelbelegung, Neustart-Test, Sicherung/Wiederherstellung).
+- `npm run test:reihe` (455 Prüfungen, echter Browser): 21 Konstellationen (4–24 Spieler, alle drei Modi, 1–12 Plätze, mit Ausfällen, Start kurz vor Mitternacht), jeweils Halbzeit und Ende als Admin, Spieler, Ausgeschiedener, Handy und Desktop.
+- Ausfälle unter 4 aktive Spieler lehnt der Server mit klarer Meldung ab (kein Absturz).
+
+## Betrieb (Phase 13)
+**Abfragetakt und Anfragenbudget.** Jedes geöffnete Handy fragt den Stand ab. Takt: bis 10 Spieler 3 s, bis 16 Spieler 4 s, darüber 6 s; nach 60 s ohne Änderung doppelt so langsam (höchstens 12 s); versteckter Tab 15 s; beim Zurückkehren in die App sofort. Cloudflare Free: je 100.000 Anfragen pro Tag für Worker und Durable Object (Doku, abgerufen am 20.11.2026).
+
+| Spieler | Takt | Abfragen je Spieler und Stunde | 3 Stunden, alle sichtbar | Anteil der Tagesgrenze |
+|---|---|---|---|---|
+| 9 (+ Laptop) | 3 s | 1.200 | ca. 36.000 | 36 % |
+| 16 | 4 s | 900 | ca. 43.000 | 43 % |
+| 24 | 6 s | 600 | ca. 43.000 | 43 % |
+
+Rechnung ohne Ruhephasen (ungünstigster Fall); Seitenaufrufe sind nicht eingerechnet. Die SQLite-Grenzen (5 Mio. gelesene, 100.000 geschriebene Zeilen pro Tag) sind unkritisch: Gelesen wird nur beim Aufwachen, geschrieben nur bei Änderungen.
+
+`npm run test:netz` (32 Prüfungen): Takt je Spielerzahl, Abfragen in 20 s gezählt, Offline mit Doppeltippen, 4 s Verzögerung, verlorene Antwort, Rückkehr aus dem Hintergrund, angefangene Eingabe bleibt erhalten.
+Texte: Meldung „Der Organisator beitritt …“ korrigiert; zwei Ablehnungen nennen jetzt den nächsten Schritt.
+Probelauf auf echten Geräten und im echten Cloudflare: siehe `docs/PROBELAUF.md`.
+
+## Übersicht der offenen Turniere und Spielplan-Vorschau (Phase 14)
+- **Übersicht:** Startseite, „Neues Turnier anlegen (Organisator)“, Schlüssel eingeben, „Offene Turniere anzeigen“. Die Liste zeigt Code, Status (Warteraum, Läuft, Beendet), Spielerzahl, letzte Änderung und den Tag der automatischen Löschung. „Öffnen“ zeigt das Turnier wie für einen Spieler, „Löschen“ fragt nach und löscht dann Turnier und Eintrag. Ein Organisator-Link lässt sich daraus nicht wiederherstellen (der Server kennt nur einen Hash).
+- **Technik:** Eigenes Durable Object `DirectoryDO` (Binding `VERZEICHNIS`, Migration v3, wird beim Deployment automatisch angelegt). Jedes Turnier meldet sich bei Statuswechsel und geänderter Spielerzahl, sonst höchstens alle 5 Minuten, und wird beim Beenden, Löschen und Ablauf abgemeldet. Nur Code, Status, Zahlen und Zeiten, keine Namen. Zusätzliche Last: ca. 40 interne Anfragen je Turnier. Ohne Verzeichnis (Binding fehlt) laufen Turniere unverändert, die Übersicht meldet „nicht eingerichtet“. Schutz: gleicher Schlüssel und gleiche Sperre bei falschen Schlüsseln wie beim Anlegen (8 Fehlversuche, 15 Minuten); Abrufe und Löschen zählen nicht als neues Turnier. Turniere, die vor diesem Deployment angelegt wurden, erscheinen erst nach ihrer nächsten Änderung.
+- **Automatisches Löschen:** 7 Tage nach der letzten Änderung (jede Änderung verschiebt die Frist). „Turnier beenden“ löscht sofort.
+- **Spielplan-Vorschau:** Im Warteraum (Organisator) steht unter den Einstellungen wieder der „Spielplan“ mit Plätzen und Zeitblöcken. Er folgt den Einstellungen sofort, auch vor dem Speichern (Platzzahl, Modus, Zeiten, Startzeit).
+- Tests: `tests/server/uebersicht.test.mjs` (57), `npm run test:uebersicht` (26, echter Browser).
+
 ## Phase 15: Abwarten – „Trotzdem jetzt ansetzen“, Zeilen im Spielplan
 - Modus „Platzierung abwarten“ bleibt unverändert. Neu: Ist ein Platz frei, Abwarten setzt aber nichts an, erscheint beim Organisator der Knopf „Trotzdem jetzt ansetzen“ (zweistufig). Er setzt nur diese eine Ansetzung ohne Abwarten an, der Modus bleibt. Offline in den Aktionen, online unter Werkzeuge (`admin/assign` mit `force`).
 - Spielplan: Spiele, die zusammen angesetzt wurden, stehen in derselben Zeile (`rollRows`, auch für „nächstes Spiel“-Zeiten der Spieler).

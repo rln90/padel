@@ -80,3 +80,12 @@ body.onl-me #app>.section:nth-of-type(3){order:4}
   .actions>button{flex:1 1 auto}
   .actions>select{flex:1 1 100%}
 }
+
+/* Übersicht der offenen Turniere */
+.ovl{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:8px}
+.ovl li{border:1px solid var(--line);border-radius:8px;padding:12px;background:var(--surface)}
+.ovl .ovh{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ovl .ovh b{font-size:16px;letter-spacing:.04em}
+.ovl .hint{margin:4px 0 8px}
+.ovl .actions{margin-top:8px}
+.ovnone{margin-top:12px}

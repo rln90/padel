@@ -31,9 +31,12 @@ async function sim(seed,evict){
     if(/adminHash|"hash"|"token"/.test(r.text)&&!/\/join$/.test(a[1]))bad('Geheimfeld in Antwort',a[1]);
     for(const s of secrets)if(s&&r.text.includes(s)&&!/\/join$/.test(a[1])&&!/^\/api\/t$/.test(a[1]))bad('Token in Antwort',a[1]);
     return r};
-  const n=4+ri(10),ov=pick(['no','yes','wait','wait']),R=3+ri(4),c=1+ri(Math.max(1,Math.floor(n/2))),draw=rng()<.5;
+  const WIDE=process.env.SIM_WIDE==='1'; // Breitenmodus: 4–24 Spieler, 3–10 Runden, 1–12 Plätze (auch mehr als nötig), alle Zeit- und Limit-Einstellungen
+  const n=WIDE?4+ri(21):4+ri(10),ov=pick(['no','yes','wait','wait']),R=WIDE?3+ri(8):3+ri(4),c=WIDE?1+ri(12):1+ri(Math.max(1,Math.floor(n/2)));
+  const lim=WIDE?rng()<.8:true,draw=lim&&rng()<.5;
   const auto=pick(['confirmed','confirmed','reported','off']);
-  const cr=await call('POST','/api/t',{headers:{'x-create-key':'geheim'},body:{cfg:{R,courts:c,ov,draw,lim:true,auto,grace:60,dur:20,brk:5}}});
+  const cfg0=WIDE?{R,courts:c,ov,draw,lim,auto,grace:30+ri(100),dur:pick([10,15,20,25,30,40,45,60,75,90]),brk:pick([0,1,2,3,4,5,10,15,20]),wu:pick([0,0,5,15,60]),lead:ov==='yes'?ri(3):0,t0:rng()<.5?ri(1440):null}:{R,courts:c,ov,draw,lim:true,auto,grace:60,dur:20,brk:5};
+  const cr=await call('POST','/api/t',{headers:{'x-create-key':'geheim'},body:{cfg:cfg0}});
   if(cr.status!==200){bad('Anlegen',cr.text);return null}
   const code=cr.json.code,adm=cr.json.adminKey;secrets.add(adm);
   const P=`/api/t/${code}`,tok=[];
@@ -87,7 +90,7 @@ async function sim(seed,evict){
   }
   stat.steps+=steps;
   V=await get();
-  if(V.status!=='finished'){bad('nicht beendet',{seed,steps,auto,ov,n,R,c});return{V,env}}
+  if(V.status!=='finished'){bad('nicht beendet',{seed,steps,auto,ov,n,R,c,cfg0});return{V,env}}
   stat.finished++;
   check(V,bad,V.S,true);
   await roundtrip(call,P,adm,V,rng2,bad);

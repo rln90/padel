@@ -22,6 +22,11 @@ class_name = "TournamentDO"
 name = "LIMITER"
 class_name = "LimiterDO"
 
+# Verzeichnis der offenen Turniere (Übersicht des Organisators)
+[[durable_objects.bindings]]
+name = "VERZEICHNIS"
+class_name = "DirectoryDO"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["TournamentDO"]
@@ -29,6 +34,10 @@ new_sqlite_classes = ["TournamentDO"]
 [[migrations]]
 tag = "v2"
 new_sqlite_classes = ["LimiterDO"]
+
+[[migrations]]
+tag = "v3"
+new_sqlite_classes = ["DirectoryDO"]
 
 # Geheimnisse (nicht hier eintragen, sondern im Cloudflare-Dashboard unter Einstellungen > Variablen und Geheimnisse, Typ „Geheimnis“):
 #   CREATE_KEY = beliebiges langes Passwort. Nur wer es kennt, darf Turniere anlegen.
