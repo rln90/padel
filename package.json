@@ -18,6 +18,7 @@
     "test:qr": "node tests/online/qr.mjs",
     "test:layout": "node tests/online/layout.mjs",
     "test:konsistenz": "node tests/online/konsistenz.mjs",
+    "test:netz": "node tests/online/netz.mjs",
     "test:reihe": "node tests/online/reihe.mjs",
     "test:obskur": "node tests/online/obskur.mjs",
     "test:angriff": "node tests/online/angriff.mjs",
