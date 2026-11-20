@@ -145,3 +145,8 @@ Probelauf auf echten Geräten und im echten Cloudflare: siehe `docs/PROBELAUF.md
 - **Automatisches Löschen:** 7 Tage nach der letzten Änderung (jede Änderung verschiebt die Frist). „Turnier beenden“ löscht sofort.
 - **Spielplan-Vorschau:** Im Warteraum (Organisator) steht unter den Einstellungen wieder der „Spielplan“ mit Plätzen und Zeitblöcken. Er folgt den Einstellungen sofort, auch vor dem Speichern (Platzzahl, Modus, Zeiten, Startzeit).
 - Tests: `tests/server/uebersicht.test.mjs` (57), `npm run test:uebersicht` (26, echter Browser).
+
+## Phase 15: Abwarten – „Trotzdem jetzt ansetzen“, Zeilen im Spielplan
+- Modus „Platzierung abwarten“ bleibt unverändert. Neu: Ist ein Platz frei, Abwarten setzt aber nichts an, erscheint beim Organisator der Knopf „Trotzdem jetzt ansetzen“ (zweistufig). Er setzt nur diese eine Ansetzung ohne Abwarten an, der Modus bleibt. Offline in den Aktionen, online unter Werkzeuge (`admin/assign` mit `force`).
+- Spielplan: Spiele, die zusammen angesetzt wurden, stehen in derselben Zeile (`rollRows`, auch für „nächstes Spiel“-Zeiten der Spieler).
+- Tests: `tests/phase15.js` (Engine, 400 Zufallsläufe), `tests/server/functional.test.mjs` (force), `tests/online/abwarten.mjs` (Browser).

@@ -17,6 +17,7 @@ echo "dropui3: $(node dropui3.js 2>&1 | grep -E "FEHLER|ALLES|JS-Fehler" | tr "\
 echo "dropui: $(node dropui.js 2>&1 | tail -1)"
 echo "live: $(node live2.js 2>&1 | tail -1)"
 echo "lead: $(node lead3.js 2>&1 | tr '\n' ' ')"
+echo "phase15: $(node phase15.js 2>&1 | tail -2 | tr "\n" " ")"
 echo "order: $(node order.js ${PADEL_HTML:-../dist/padel-turnier.html} 800 2>&1 | tail -1)"
 echo "new1: $(node new1.js 2>&1 | grep -E '^(A/B|C:|D:)' | tr '\n' ' ')"
 echo "engine-diff: $(node engine-diff.js 600 2>&1 | tail -1)"
