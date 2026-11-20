@@ -74,6 +74,8 @@ export class Tournament{
   exists(){return !!this.m}
   toJSON(){return this.m}
   expiresAt(){return this.m?this.m.touched+TTL:0}
+  /* Kurzfassung für die Turnierübersicht des Organisators (keine Namen, keine Schlüssel) */
+  summary(){const m=this.m;return m?{code:m.code,st:m.status,n:m.players.length,c:m.created,t:m.touched,e:this.expiresAt()}:null}
 
   /* ===== Anfrage bearbeiten: {method,path,token,body,query,ip} -> {status,body,dirty,wipe} ===== */
   handle(req){
