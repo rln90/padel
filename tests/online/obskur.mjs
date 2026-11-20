@@ -63,7 +63,7 @@ step('3 Serverfehler');
  let hung=0;await p.route('**/api/**',()=>{hung++});await p.waitForTimeout(16000);ok(hung>=1,'Anfragen hängen (Test aufgebaut)',hung);
  ok(await p.evaluate(()=>!!document.querySelector('.hero .ho')),'Bei hängendem Server bleibt die Ansicht stehen');
  await p.unroute('**/api/**');await p.waitForTimeout(16000);
- const ver0=await p.evaluate(()=>window.__online.state().D.ver);await P(T.code,'admin/config',T.adm,{cfg:{auto:'confirmed'}});await p.waitForTimeout(4500);
+ const ver0=await p.evaluate(()=>window.__online.state().D.ver);await P(T.code,'admin/config',T.adm,{cfg:{auto:'confirmed'}});await p.waitForFunction(v=>window.__online.state().D.ver>v,ver0,{timeout:14000}).catch(()=>{});
  ok(await p.evaluate(v=>window.__online.state().D.ver>v,ver0),'Nach hängendem Server holt die Seite wieder auf (kein Dauer-Hänger)');
  await p.close()}
 

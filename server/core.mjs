@@ -280,7 +280,7 @@ const ROUTES={
   'POST join'(c){
     const m=this.m,b=c.body;
     if(c.who.role==='player'){const p=playerById(this,c.who.pid);return{pid:p.id,name:p.name,resumed:true}}
-    if(c.who.role==='admin')throw new Err(403,'verboten','Der Organisator beitritt über einen Spielernamen, nicht mit dem Admin-Zugang. Bitte den Admin-Link nicht mit anderen teilen.');
+    if(c.who.role==='admin')throw new Err(403,'verboten','Mit dem Organisator-Zugang kann man nicht beitreten. Zum Mitspielen bitte „Selbst mitspielen“ nutzen oder den Spieler-Link öffnen.');
     // Versuche je Netzwerkadresse begrenzen
     // Nur abgewiesene Versuche zählen (Tippfehler, vergebene Namen): ein ganzes Lokal teilt oft eine Adresse und soll nicht gesperrt werden
     const t=this.now(),ip=c.ip||'-',a=(this.joins.get(ip)||[]).filter(x=>x>t-LIM.joinWindow);
@@ -323,7 +323,7 @@ const ROUTES={
     this.need(c.who,'player');needRunning(this);
     const m=this.m,i=this.idxOf(c.who.pid),has=m.reqs.some(r=>r.pid===c.who.pid);
     if(c.body.cancel===true){if(has){m.reqs=m.reqs.filter(r=>r.pid!==c.who.pid);this.commit(c.who,'drop-cancel',c.who.pid)}return{}}
-    if(!this.E.canDrop(i))throw new Err(409,'nicht_moeglich','Ausscheiden ist jetzt nicht möglich.');
+    if(!this.E.canDrop(i))throw new Err(409,'nicht_moeglich','Ausscheiden ist jetzt nicht möglich (zu wenige Spieler oder das Turnier ist zu Ende). Bitte den Organisator fragen.');
     if(!has){m.reqs.push({pid:c.who.pid,at:this.now(),type:'drop'});this.commit(c.who,'drop-request',c.who.pid)}
     return{};
   },
@@ -420,7 +420,7 @@ function setResult(t,who,b,asAdmin){
       if(g.locked)throw new Err(409,'gesperrt','Dieses Spiel ist abgeschlossen. Bitte den Organisator fragen.');
       if(was&&r&&(r.st==='confirmed'||r.st==='admin'))throw new Err(409,'bestaetigt','Das Ergebnis ist bereits bestätigt. Bitte den Organisator fragen.');
     }
-  }else if(g.locked&&!same&&b.force!==true)throw new Err(409,'gesperrt','Das Spiel ist abgeschlossen. Zum Ändern „force“ bestätigen.');
+  }else if(g.locked&&!same&&b.force!==true)throw new Err(409,'gesperrt','Das Spiel ist abgeschlossen. Zum Ändern bitte das Überschreiben bestätigen.');
   const key=admin?'admin':who.pid,tm=t.now();
   if(same){
     if(admin){if(!r||r.st!=='admin'){m.res[g.m.gid]={by:'admin',st:'admin',at:tm,n:0};t.commit(who,'result',g.m.gid);t.autoStep()}return{st:'admin'}}
