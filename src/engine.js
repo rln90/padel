@@ -424,6 +424,10 @@ function rollAdd(){
   ps.forEach(([a,b,h],i)=>S.games.push(h?{a,b,sa:null,sb:null,c:free[i],k,h:1}:{a,b,sa:null,sb:null,c:free[i],k}));
   return ps.length;
 }
+/* Einmalig ohne Abwarten ansetzen: Der Modus „Platzierung abwarten“ bleibt, nur diese Ansetzung ignoriert das Warten.
+   rollPeekNow zeigt, was dabei angesetzt würde (ohne etwas zu ändern). */
+function rollPeekNow(st,free){const w=S.wait;S.wait=false;try{return rollPick(st,free)}finally{S.wait=w}}
+function rollAddNow(){const w=S.wait;S.wait=false;try{return rollAdd()}finally{S.wait=w}}
 /* Platz und Zeitzeile je Spiel einer Runde (Runde für Runde): gleiche Aufteilung wie im Spielplan */
 function classicSlots(ri){
   const mp=new Map(),rd=S.rounds[ri];if(!rd||!S.courts)return mp;
@@ -431,10 +435,21 @@ function classicSlots(ri){
   schedule(S.n,S.R,c).forEach((b,i)=>{if(b.r!==ri)return;b.items.forEach((it,k)=>{const m=it.t==="x"?rd.x:o[it.j];if(m)mp.set(m,{k,i})})});
   return mp;
 }
+/* Zeile im Spielplan je Spiel: Spiele, die zusammen angesetzt wurden (gleicher Block k), stehen in einer Zeile; sonst zählt der Platz (jeder Platz füllt seine Zeilen von oben) */
+function rollRows(games,c){
+  const nx=Array(c).fill(0),out=[];let i=0;
+  while(i<games.length){
+    let j=i;while(j<games.length&&games[j].k===games[i].k)j++;
+    let row=0;for(let q=i;q<j;q++)row=Math.max(row,nx[games[q].c]);
+    for(let q=i;q<j;q++){out[q]=row;nx[games[q].c]=row+1}
+    i=j;
+  }
+  return out;
+}
 function nextOf(p){
   if(S.ov){
     const i=S.games.findIndex(m=>!done(m)&&(m.a===p||m.b===p));
-    if(i>=0){const m=S.games[i];return{o:m.a===p?m.b:m.a,k:m.c,i:S.games.slice(0,i).filter(x=>x.c===m.c).length}}
+    if(i>=0){const m=S.games[i];return{o:m.a===p?m.b:m.a,k:m.c,i:rollRows(S.games,S.courts)[i]}}
     return null;
   }
   const ri=S.rounds.length-1,rd=S.rounds[ri],SL=classicSlots(ri);

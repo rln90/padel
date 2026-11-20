@@ -384,9 +384,10 @@ function bottom(){
       <div class="actions">${D.dropReq?`<span class="status">Anfrage gesendet, der Organisator bestätigt.</span>`+btn("dropcancel","Anfrage zurückziehen",{q:true}):sure("dropreq","dropreq","Ich möchte ausscheiden","Wirklich anfragen?")}</div></section>`;
   }
   if(adm){
+    let now=0;try{if(D.status==="running"&&S&&S.ov&&S.wait){const st=rollState(),fr=S.courts-st.courts.size;if(fr>0&&rollLeft()+helpLeft()>0&&!rollPick(st,fr).length)now=rollPeekNow(st,fr).length}}catch(e){}
     const cand=D.players.map((p,i)=>({p,i})).filter(x=>!x.p.out&&D.status==="running"&&canDrop(x.i));
     h+=`<section class="panel adm"><h3>Werkzeuge</h3><div class="actions">
-      ${D.status==="running"?btn("assign","Jetzt ansetzen",{q:true})+sure("undo","undo","Letzte Ansetzung zurücknehmen","Wirklich zurücknehmen?"):""}
+      ${D.status==="running"?btn("assign","Jetzt ansetzen",{q:true})+(now?sure("force","force","Trotzdem jetzt ansetzen"+(now>1?" ("+now+")":""),"Ohne Abwarten ansetzen: wirklich?"):"")+sure("undo","undo","Letzte Ansetzung zurücknehmen","Wirklich zurücknehmen?"):""}
       ${btn("export","Sicherung herunterladen",{q:true})}
       ${btn("copy","Link für Spieler kopieren",{q:true,attr:'data-text="'+esc(playerLink())+'"'})}${btn("copy","Organisator-Link kopieren",{q:true,attr:'data-text="'+esc(adminLink())+'"'})}</div>
       ${cand.length?`<div class="actions"><select data-d="dropsel" aria-label="Spieler ausscheiden lassen">${cand.map(x=>`<option value="${x.p.id}">${esc(x.p.name)}</option>`).join("")}</select>${sure("drop","drop","Ausscheiden lassen","Wirklich ausscheiden lassen?")}</div>`:""}
@@ -482,6 +483,7 @@ const ACT={
   async dropok(e){if(!await call("/admin/drop",{pid:+e.dataset.pid},"admin"))return;await refresh()},
   async dropno(e){if(!await call("/admin/dismiss",{pid:+e.dataset.pid},"admin"))return;await refresh()},
   async drop(){disarm();const pid=+val("dropsel");if(!await call("/admin/drop",{pid},"admin"))return;await refresh()},
+  async force(){const r=await call("/admin/assign",{force:true},"admin");if(!r)return;say(r.assigned?"Ohne Abwarten angesetzt.":"Es gibt gerade nichts anzusetzen.");await refresh()},
   async assign(){const r=await call("/admin/assign",{},"admin");if(!r)return;say(r.assigned?"Neue Spiele angesetzt.":"Es gibt gerade nichts anzusetzen.");await refresh()},
   async undo(){disarm();if(!await call("/admin/undo",{confirm:true},"admin"))return;await refresh()},
   async end(){disarm();if(!await call("/admin/end",{confirm:true},"admin"))return;dropTok(CODE);CODE=null;D=null;TOK={p:null,a:null,pid:null};gen++;clearTimeout(pollT);history.replaceState(null,"","#");say("Das Turnier wurde gelöscht.");paintAll()},

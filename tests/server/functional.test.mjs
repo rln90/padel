@@ -332,5 +332,34 @@ const NAMES=['Anna','Ben','Cem','Dora','Emil','Fay','Gero','Hanna'];
   let fail=false;const m2=await mk({},{failPut:()=>fail});fail=true;await join(m2.c,m2.code,'Zoë');console.error=o2;
   ok(lg.some(x=>/"ev":"speichern"/.test(x))&&!lg.some(x=>x.includes('Zoë')),'Speicherfehler im Protokoll, ohne Namen');
 }
+// ---- Abwarten: „Trotzdem ansetzen“ (admin/assign mit force)
+{
+  let stuckSeen=0,forcedOk=0,modeOk=true;
+  for(let run=0;run<12;run++){
+    const {c,code,adm}=await mk({R:4,courts:3,ov:'wait',auto:'reported',draw:true});
+    const t=await fill(c,code,['Anna','Ben','Cem','Dora','Emil','Fay','Gero','Hanna','Ida']);
+    await c('POST',T(code)+'/admin/start',{token:adm});
+    const get=async()=>(await c('GET',T(code)+'/state',{token:adm})).json;
+    for(let step=0;step<80;step++){
+      const st=await get();const live=st.S.games.filter(g=>!g.fin&&g.sa==null);
+      const busyC=new Set(live.map(g=>g.c)),free=3-busyC.size;
+      if(free>0&&live.length&&st.S.games.length<18){
+        const a0=st.S.games.length,r=await c('POST',T(code)+'/admin/assign',{token:adm,body:{force:true}});
+        ok(r.status===200,'force: Antwort 200');
+        const s2=await get();
+        if(s2.S.games.length>a0){forcedOk++;const l2=s2.S.games.filter(g=>!g.fin&&g.sa==null),pp=l2.flatMap(g=>[g.a,g.b]);ok(new Set(pp).size===pp.length&&new Set(l2.map(g=>g.c)).size===l2.length,'force: keine Doppelbelegung');}
+        if(s2.cfg&&s2.cfg.ov!=='wait')modeOk=false;
+        if(r.json.assigned===0)stuckSeen++;
+      }
+      const l=(await get()).S.games.filter(g=>!g.fin&&g.sa==null);if(!l.length)break;
+      const g=l[0];await c('POST',T(code)+'/admin/result',{token:adm,body:{gid:g.gid,sa:g.gid%2?6:3,sb:g.gid%2?2:6,force:true}});
+    }
+  }
+  ok(forcedOk>0,'force: mindestens einmal wirksam ('+forcedOk+')');ok(modeOk,'force: Modus bleibt „wait“');
+  const {c:c1,code:co1,adm:ad1}=await mk({R:4,courts:2,ov:'yes'});
+  const t1=await fill(c1,co1,NAMES.slice(0,4));await c1('POST',T(co1)+'/admin/start',{token:ad1});
+  const rf=await c1('POST',T(co1)+'/admin/assign',{token:ad1,body:{force:true}});ok(rf.status===200,'force in „yes“: kein Fehler, normales Ansetzen');
+  const rn=await c1('POST',T(co1)+'/admin/assign',{token:t1[NAMES[0]],body:{force:true}});ok(rn.status===403,'force: Spieler darf nicht ('+rn.status+')');
+}
 console.log(f?`FEHLER gesamt ${f} von ${n}`:`ALLES OK (${n} Prüfungen)`);
 process.exit(f?1:0);

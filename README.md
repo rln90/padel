@@ -118,3 +118,8 @@ Gefunden und behoben: Das Code-Feld auf der Startseite akzeptierte nur 6 Zeichen
 
 ## Feinschliff (Phase 11)
 Gefunden bei einem Durchlauf mit 9 Spielern (Ausfall, Zurücknehmen, Entscheidungsspiele): Die Platzanzeige "Platz 2 von 9" zählte einen ausgeschiedenen Spieler mit, obwohl nur 8 in der Wertung stehen; jetzt zählt sie nur aktive Spieler. Die Tabellenlegende hatte "Games erzielte : kassierte Games", jetzt "Games erzielt:kassiert". Prüfung 11 in `test:obskur` (66 Prüfungen).
+
+## Phase 15: Abwarten – „Trotzdem jetzt ansetzen“, Zeilen im Spielplan
+- Modus „Platzierung abwarten“ bleibt unverändert. Neu: Ist ein Platz frei, Abwarten setzt aber nichts an, erscheint beim Organisator der Knopf „Trotzdem jetzt ansetzen“ (zweistufig). Er setzt nur diese eine Ansetzung ohne Abwarten an, der Modus bleibt. Offline in den Aktionen, online unter Werkzeuge (`admin/assign` mit `force`).
+- Spielplan: Spiele, die zusammen angesetzt wurden, stehen in derselben Zeile (`rollRows`, auch für „nächstes Spiel“-Zeiten der Spieler).
+- Tests: `tests/phase15.js` (Engine, 400 Zufallsläufe), `tests/server/functional.test.mjs` (force), `tests/online/abwarten.mjs` (Browser).

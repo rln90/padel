@@ -395,7 +395,7 @@ function renderViewer(){
   let h="";
   if(S.ov){
     const v=rollView(),I=v.I,P=rollPauses(S.games,I,S.n);rollTitle(v);
-    h=`<div class="matches">${v.rows.map(([m,i])=>viewRow({cls:rcOf(I[i].r),t:rollTag(I[i])},m,m.c,S.games.slice(0,i).filter(x=>x.c===m.c).length)).join("")}</div>`+
+    h=`<div class="matches">${v.rows.map(([m,i])=>viewRow({cls:rcOf(I[i].r),t:rollTag(I[i])},m,m.c,rollRows(S.games,S.courts)[i])).join("")}</div>`+
       [...new Set(v.rows.map(([m,i])=>I[i].r))].filter(r=>P[r]).map(r=>`<p class="note">Pausiert in Runde ${r}: <b>${P[r].map(x=>esc(S.names[x])).join(", ")}</b></p>`).join("");
   }else{
     const ri=S.rounds.length-1,rd=S.rounds[ri],SL=classicSlots(ri);
@@ -479,7 +479,13 @@ function renderHist(){
 }
 const rcOf=r=>"rc"+((r-1)%6);
 function renderRoll(){rollCur();renderTable();rollActions();rollHist();renderPlan()}
-function rollGo(){justDone.clear();undoArmed=false;rollAdd();save();renderRoll()}
+function rollGo(){justDone.clear();undoArmed=false;forceArmed=false;rollAdd();save();renderRoll()}
+let forceArmed=false;
+/* „Trotzdem ansetzen“ (nur bei Abwarten): zweistufig, damit es nicht versehentlich passiert */
+function rollForce(){
+  if(!forceArmed){forceArmed=true;rollActions();setTimeout(()=>{forceArmed=false;if(S&&S.ov)rollActions()},3500);return}
+  forceArmed=false;justDone.clear();undoArmed=false;rollAddNow();save();renderRoll();
+}
 /* Sichtbar im Bereich oben: offene Spiele, gerade beendete Spiele und der jüngste Block (korrigierbar). Ältere Spiele sind gesperrt. */
 function rollView(){
   const I=rollInfo(S.games,S.n),mx=I.length?Math.max(...I.map(f=>f.r)):1,K=lastBlock();
@@ -511,7 +517,7 @@ function rollTitle(v){
 }
 function rollCur(){
   const st=rollState(),v=rollView(),I=v.I,nm=i=>esc(S.names[i]),P=rollPauses(S.games,I,S.n),G=S.games.length+rollLeft()+helpLeft();
-  const row=(m,i)=>`<div class="mw ${rcOf(I[i].r)}"><span class="tag">${rollTag(I[i])} · <b class="crt">${esc(cname(m.c))}</b>${T0()!=null?" · ab "+tt(S.games.slice(0,i).filter(x=>x.c===m.c).length,S.dur+S.brk):""}</span><div class="m" id="g${i}">
+  const row=(m,i)=>`<div class="mw ${rcOf(I[i].r)}"><span class="tag">${rollTag(I[i])} · <b class="crt">${esc(cname(m.c))}</b>${T0()!=null?" · ab "+tt(rollRows(S.games,S.courts)[i],S.dur+S.brk):""}</span><div class="m" id="g${i}">
       <div class="a ${done(m)&&m.sa>m.sb?"win":""}">${nm(m.a)}</div>
       <input type="number" min="0" max="99" inputmode="numeric" enterkeyhint="next" aria-label="Games ${nm(m.a)}" value="${m.sa??""}" oninput="rollScore(${i},'a',this.value)">
       <div class="sep">:</div>
@@ -578,7 +584,9 @@ function rollActions(){
   const free=S.courts-st.courts.size,peek=free&&left?rollPick(st,free).length:0;
   $("#prog").textContent=`${fin} von ${G} Spielen beendet`;
   let h="";
+  const now=S.wait&&left&&free&&!peek?rollPeekNow(st,free).length:0;
   if(left)h+=`<button onclick="rollGo()"${peek?"":" disabled"}>${peek>1?peek+" Spiele ansetzen":"Spiel ansetzen"}</button>`;
+  if(now)h+=`<button class="${forceArmed?"danger":"quiet"}" onclick="rollForce()" title="Setzt ${now===1?"das Spiel":"die Spiele"} jetzt an, ohne auf die Platzierung zu warten. Der Modus bleibt.">${forceArmed?"Ohne Abwarten ansetzen: wirklich?":`Trotzdem jetzt ansetzen${now>1?" ("+now+")":""}`}</button>`;
   if(lastBlock()>=1){const nb=S.games.filter(m=>m.k===lastBlock()).length;h+=`<button class="${undoArmed?"danger":"quiet"}" onclick="rollUndo()" title="Verwirft die zuletzt angesetzten ${nb} ${nb===1?"Spiel":"Spiele"} und öffnet den Block davor zum Korrigieren">${undoArmed?`${nb} ${nb===1?"Spiel":"Spiele"} wirklich verwerfen?`:"Letzte Ansetzung zurücknehmen"}</button>`}
   const msg=!left?(pend?`Noch ${pend} ${pend===1?"Ergebnis":"Ergebnisse"} offen.`:"Alle Spiele gespielt."):
     peek?`${free} ${free===1?"Platz":"Plätze"} frei, ${peek===1?"ein Spiel kann":peek+" Spiele können"} angesetzt werden.`:
@@ -601,7 +609,7 @@ function rollHist(){
 /* Plan bei überlappenden Runden: ein Feld pro Spiel und Platz, in Ansetzungsreihenfolge, mit Rundenköpfen */
 function planRoll(n,R,c,dur,brk,games){
   const step=dur+brk,per=Array.from({length:c},()=>[]),I=rollInfo(games,n),P=rollPauses(games,I,n);
-  games.forEach((m,i)=>per[m.c].push([m,i]));
+  rollRows(games,c).forEach((r,i)=>{per[games[i].c][r]=[games[i],i]});
   const gh=rollGhosts(n,R,I).slice(0,S&&games===S.games?rollLeft()+helpLeft():n*R/2-games.length),seen=new Set();let gi=0;
   /* feststehende Spiele (rollSure) in den freien Feldern mit Namen zeigen */
   if(S&&games===S.games){

@@ -746,6 +746,10 @@ function rollAdd(){
   ps.forEach(([a,b,h],i)=>S.games.push(h?{a,b,sa:null,sb:null,c:free[i],k,h:1}:{a,b,sa:null,sb:null,c:free[i],k}));
   return ps.length;
 }
+/* Einmalig ohne Abwarten ansetzen: Der Modus „Platzierung abwarten“ bleibt, nur diese Ansetzung ignoriert das Warten.
+   rollPeekNow zeigt, was dabei angesetzt würde (ohne etwas zu ändern). */
+function rollPeekNow(st,free){const w=S.wait;S.wait=false;try{return rollPick(st,free)}finally{S.wait=w}}
+function rollAddNow(){const w=S.wait;S.wait=false;try{return rollAdd()}finally{S.wait=w}}
 /* Platz und Zeitzeile je Spiel einer Runde (Runde für Runde): gleiche Aufteilung wie im Spielplan */
 function classicSlots(ri){
   const mp=new Map(),rd=S.rounds[ri];if(!rd||!S.courts)return mp;
@@ -753,10 +757,21 @@ function classicSlots(ri){
   schedule(S.n,S.R,c).forEach((b,i)=>{if(b.r!==ri)return;b.items.forEach((it,k)=>{const m=it.t==="x"?rd.x:o[it.j];if(m)mp.set(m,{k,i})})});
   return mp;
 }
+/* Zeile im Spielplan je Spiel: Spiele, die zusammen angesetzt wurden (gleicher Block k), stehen in einer Zeile; sonst zählt der Platz (jeder Platz füllt seine Zeilen von oben) */
+function rollRows(games,c){
+  const nx=Array(c).fill(0),out=[];let i=0;
+  while(i<games.length){
+    let j=i;while(j<games.length&&games[j].k===games[i].k)j++;
+    let row=0;for(let q=i;q<j;q++)row=Math.max(row,nx[games[q].c]);
+    for(let q=i;q<j;q++){out[q]=row;nx[games[q].c]=row+1}
+    i=j;
+  }
+  return out;
+}
 function nextOf(p){
   if(S.ov){
     const i=S.games.findIndex(m=>!done(m)&&(m.a===p||m.b===p));
-    if(i>=0){const m=S.games[i];return{o:m.a===p?m.b:m.a,k:m.c,i:S.games.slice(0,i).filter(x=>x.c===m.c).length}}
+    if(i>=0){const m=S.games[i];return{o:m.a===p?m.b:m.a,k:m.c,i:rollRows(S.games,S.courts)[i]}}
     return null;
   }
   const ri=S.rounds.length-1,rd=S.rounds[ri],SL=classicSlots(ri);
@@ -1240,7 +1255,7 @@ function renderViewer(){
   let h="";
   if(S.ov){
     const v=rollView(),I=v.I,P=rollPauses(S.games,I,S.n);rollTitle(v);
-    h=`<div class="matches">${v.rows.map(([m,i])=>viewRow({cls:rcOf(I[i].r),t:rollTag(I[i])},m,m.c,S.games.slice(0,i).filter(x=>x.c===m.c).length)).join("")}</div>`+
+    h=`<div class="matches">${v.rows.map(([m,i])=>viewRow({cls:rcOf(I[i].r),t:rollTag(I[i])},m,m.c,rollRows(S.games,S.courts)[i])).join("")}</div>`+
       [...new Set(v.rows.map(([m,i])=>I[i].r))].filter(r=>P[r]).map(r=>`<p class="note">Pausiert in Runde ${r}: <b>${P[r].map(x=>esc(S.names[x])).join(", ")}</b></p>`).join("");
   }else{
     const ri=S.rounds.length-1,rd=S.rounds[ri],SL=classicSlots(ri);
@@ -1324,7 +1339,13 @@ function renderHist(){
 }
 const rcOf=r=>"rc"+((r-1)%6);
 function renderRoll(){rollCur();renderTable();rollActions();rollHist();renderPlan()}
-function rollGo(){justDone.clear();undoArmed=false;rollAdd();save();renderRoll()}
+function rollGo(){justDone.clear();undoArmed=false;forceArmed=false;rollAdd();save();renderRoll()}
+let forceArmed=false;
+/* „Trotzdem ansetzen“ (nur bei Abwarten): zweistufig, damit es nicht versehentlich passiert */
+function rollForce(){
+  if(!forceArmed){forceArmed=true;rollActions();setTimeout(()=>{forceArmed=false;if(S&&S.ov)rollActions()},3500);return}
+  forceArmed=false;justDone.clear();undoArmed=false;rollAddNow();save();renderRoll();
+}
 /* Sichtbar im Bereich oben: offene Spiele, gerade beendete Spiele und der jüngste Block (korrigierbar). Ältere Spiele sind gesperrt. */
 function rollView(){
   const I=rollInfo(S.games,S.n),mx=I.length?Math.max(...I.map(f=>f.r)):1,K=lastBlock();
@@ -1356,7 +1377,7 @@ function rollTitle(v){
 }
 function rollCur(){
   const st=rollState(),v=rollView(),I=v.I,nm=i=>esc(S.names[i]),P=rollPauses(S.games,I,S.n),G=S.games.length+rollLeft()+helpLeft();
-  const row=(m,i)=>`<div class="mw ${rcOf(I[i].r)}"><span class="tag">${rollTag(I[i])} · <b class="crt">${esc(cname(m.c))}</b>${T0()!=null?" · ab "+tt(S.games.slice(0,i).filter(x=>x.c===m.c).length,S.dur+S.brk):""}</span><div class="m" id="g${i}">
+  const row=(m,i)=>`<div class="mw ${rcOf(I[i].r)}"><span class="tag">${rollTag(I[i])} · <b class="crt">${esc(cname(m.c))}</b>${T0()!=null?" · ab "+tt(rollRows(S.games,S.courts)[i],S.dur+S.brk):""}</span><div class="m" id="g${i}">
       <div class="a ${done(m)&&m.sa>m.sb?"win":""}">${nm(m.a)}</div>
       <input type="number" min="0" max="99" inputmode="numeric" enterkeyhint="next" aria-label="Games ${nm(m.a)}" value="${m.sa??""}" oninput="rollScore(${i},'a',this.value)">
       <div class="sep">:</div>
@@ -1423,7 +1444,9 @@ function rollActions(){
   const free=S.courts-st.courts.size,peek=free&&left?rollPick(st,free).length:0;
   $("#prog").textContent=`${fin} von ${G} Spielen beendet`;
   let h="";
+  const now=S.wait&&left&&free&&!peek?rollPeekNow(st,free).length:0;
   if(left)h+=`<button onclick="rollGo()"${peek?"":" disabled"}>${peek>1?peek+" Spiele ansetzen":"Spiel ansetzen"}</button>`;
+  if(now)h+=`<button class="${forceArmed?"danger":"quiet"}" onclick="rollForce()" title="Setzt ${now===1?"das Spiel":"die Spiele"} jetzt an, ohne auf die Platzierung zu warten. Der Modus bleibt.">${forceArmed?"Ohne Abwarten ansetzen: wirklich?":`Trotzdem jetzt ansetzen${now>1?" ("+now+")":""}`}</button>`;
   if(lastBlock()>=1){const nb=S.games.filter(m=>m.k===lastBlock()).length;h+=`<button class="${undoArmed?"danger":"quiet"}" onclick="rollUndo()" title="Verwirft die zuletzt angesetzten ${nb} ${nb===1?"Spiel":"Spiele"} und öffnet den Block davor zum Korrigieren">${undoArmed?`${nb} ${nb===1?"Spiel":"Spiele"} wirklich verwerfen?`:"Letzte Ansetzung zurücknehmen"}</button>`}
   const msg=!left?(pend?`Noch ${pend} ${pend===1?"Ergebnis":"Ergebnisse"} offen.`:"Alle Spiele gespielt."):
     peek?`${free} ${free===1?"Platz":"Plätze"} frei, ${peek===1?"ein Spiel kann":peek+" Spiele können"} angesetzt werden.`:
@@ -1446,7 +1469,7 @@ function rollHist(){
 /* Plan bei überlappenden Runden: ein Feld pro Spiel und Platz, in Ansetzungsreihenfolge, mit Rundenköpfen */
 function planRoll(n,R,c,dur,brk,games){
   const step=dur+brk,per=Array.from({length:c},()=>[]),I=rollInfo(games,n),P=rollPauses(games,I,n);
-  games.forEach((m,i)=>per[m.c].push([m,i]));
+  rollRows(games,c).forEach((r,i)=>{per[games[i].c][r]=[games[i],i]});
   const gh=rollGhosts(n,R,I).slice(0,S&&games===S.games?rollLeft()+helpLeft():n*R/2-games.length),seen=new Set();let gi=0;
   /* feststehende Spiele (rollSure) in den freien Feldern mit Namen zeigen */
   if(S&&games===S.games){
@@ -1957,9 +1980,10 @@ function bottom(){
       <div class="actions">${D.dropReq?`<span class="status">Anfrage gesendet, der Organisator bestätigt.</span>`+btn("dropcancel","Anfrage zurückziehen",{q:true}):sure("dropreq","dropreq","Ich möchte ausscheiden","Wirklich anfragen?")}</div></section>`;
   }
   if(adm){
+    let now=0;try{if(D.status==="running"&&S&&S.ov&&S.wait){const st=rollState(),fr=S.courts-st.courts.size;if(fr>0&&rollLeft()+helpLeft()>0&&!rollPick(st,fr).length)now=rollPeekNow(st,fr).length}}catch(e){}
     const cand=D.players.map((p,i)=>({p,i})).filter(x=>!x.p.out&&D.status==="running"&&canDrop(x.i));
     h+=`<section class="panel adm"><h3>Werkzeuge</h3><div class="actions">
-      ${D.status==="running"?btn("assign","Jetzt ansetzen",{q:true})+sure("undo","undo","Letzte Ansetzung zurücknehmen","Wirklich zurücknehmen?"):""}
+      ${D.status==="running"?btn("assign","Jetzt ansetzen",{q:true})+(now?sure("force","force","Trotzdem jetzt ansetzen"+(now>1?" ("+now+")":""),"Ohne Abwarten ansetzen: wirklich?"):"")+sure("undo","undo","Letzte Ansetzung zurücknehmen","Wirklich zurücknehmen?"):""}
       ${btn("export","Sicherung herunterladen",{q:true})}
       ${btn("copy","Link für Spieler kopieren",{q:true,attr:'data-text="'+esc(playerLink())+'"'})}${btn("copy","Organisator-Link kopieren",{q:true,attr:'data-text="'+esc(adminLink())+'"'})}</div>
       ${cand.length?`<div class="actions"><select data-d="dropsel" aria-label="Spieler ausscheiden lassen">${cand.map(x=>`<option value="${x.p.id}">${esc(x.p.name)}</option>`).join("")}</select>${sure("drop","drop","Ausscheiden lassen","Wirklich ausscheiden lassen?")}</div>`:""}
@@ -2055,6 +2079,7 @@ const ACT={
   async dropok(e){if(!await call("/admin/drop",{pid:+e.dataset.pid},"admin"))return;await refresh()},
   async dropno(e){if(!await call("/admin/dismiss",{pid:+e.dataset.pid},"admin"))return;await refresh()},
   async drop(){disarm();const pid=+val("dropsel");if(!await call("/admin/drop",{pid},"admin"))return;await refresh()},
+  async force(){const r=await call("/admin/assign",{force:true},"admin");if(!r)return;say(r.assigned?"Ohne Abwarten angesetzt.":"Es gibt gerade nichts anzusetzen.");await refresh()},
   async assign(){const r=await call("/admin/assign",{},"admin");if(!r)return;say(r.assigned?"Neue Spiele angesetzt.":"Es gibt gerade nichts anzusetzen.");await refresh()},
   async undo(){disarm();if(!await call("/admin/undo",{confirm:true},"admin"))return;await refresh()},
   async end(){disarm();if(!await call("/admin/end",{confirm:true},"admin"))return;dropTok(CODE);CODE=null;D=null;TOK={p:null,a:null,pid:null};gen++;clearTimeout(pollT);history.replaceState(null,"","#");say("Das Turnier wurde gelöscht.");paintAll()},

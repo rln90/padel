@@ -386,7 +386,7 @@ const ROUTES={
   'POST admin/assign'(c){
     this.need(c.who,'admin');needRunning(this);const E=this.E;
     let n=0;
-    if(!E.isOver()){if(E.S.ov)n=E.assignGames();else if(E.canAdvance())n=E.advanceRound()?1:0}
+    if(!E.isOver()){if(E.S.ov)n=(c.body&&c.body.force&&E.S.wait)?E.rollAddNow():E.assignGames();else if(E.canAdvance())n=E.advanceRound()?1:0}
     this.reconcile();if(n)this.commit(c.who,'assign',n);return{assigned:n};
   },
   'POST admin/undo'(c){
