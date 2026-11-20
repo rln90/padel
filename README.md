@@ -118,3 +118,8 @@ Gefunden und behoben: Das Code-Feld auf der Startseite akzeptierte nur 6 Zeichen
 
 ## Feinschliff (Phase 11)
 Gefunden bei einem Durchlauf mit 9 Spielern (Ausfall, Zurücknehmen, Entscheidungsspiele): Die Platzanzeige "Platz 2 von 9" zählte einen ausgeschiedenen Spieler mit, obwohl nur 8 in der Wertung stehen; jetzt zählt sie nur aktive Spieler. Die Tabellenlegende hatte "Games erzielte : kassierte Games", jetzt "Games erzielt:kassiert". Prüfung 11 in `test:obskur` (66 Prüfungen).
+
+## Reihenuntersuchung (Phase 12)
+- `SIM_WIDE=1 node tests/server/sim.test.mjs 300`: Simulation über 4–24 Spieler, 3–10 Runden, 1–12 Plätze (auch mehr als nötig), alle Zeiten (Dauer, Pause, Aufwärmen, Vorsprung, Startzeit), mit und ohne Unentschieden. 600 Läufe ohne Verstoß (Spielzahl am Ende gleich, keine Doppelbelegung, Neustart-Test, Sicherung/Wiederherstellung).
+- `npm run test:reihe` (455 Prüfungen, echter Browser): 21 Konstellationen (4–24 Spieler, alle drei Modi, 1–12 Plätze, mit Ausfällen, Start kurz vor Mitternacht), jeweils Halbzeit und Ende als Admin, Spieler, Ausgeschiedener, Handy und Desktop.
+- Ausfälle unter 4 aktive Spieler lehnt der Server mit klarer Meldung ab (kein Absturz).
