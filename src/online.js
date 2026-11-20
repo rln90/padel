@@ -2,7 +2,7 @@
 (function(){
 "use strict";
 const API="/api/t",CODE_OK=/^[ABCDEFGHJKMNPQRSTUVWXYZ2-9]{6}$/;
-let seq=0,applied=0,CODE=null,TOK={p:null,a:null,pid:null},D=null,ver=-1,netErr="",flash=null,armed=null,armT=null,pollT=null,fails=0,inflight=false,gen=0;
+let lastChange=Date.now();let seq=0,applied=0,CODE=null,TOK={p:null,a:null,pid:null},D=null,ver=-1,netErr="",flash=null,armed=null,armT=null,pollT=null,fails=0,inflight=false,gen=0;
 const OPEN=new Set(),mem={};
 
 /* ---------- Hilfen ---------- */
@@ -79,13 +79,19 @@ async function poll(force){
       if(TOK.a&&tok===TOK.a)TOK.a=null;else TOK.p=null;TOK.pid=TOK.p?TOK.pid:null;saveTok();
       say("Dein Zugang gilt nicht mehr. Bitte neu beitreten oder den Organisator um Freigabe bitten.",true);ver=-1;schedule(500);return}
     if(!j.same&&D&&j.code===D.code&&j.ver<D.ver){schedule();return}
-    if(!j.same){D=j;ver=j.ver;if(TOK.pid!=null&&!D.players.some(p=>p.id===TOK.pid)){TOK.pid=null;TOK.p=null;saveTok()}paintAll()}
+    if(!j.same){D=j;ver=j.ver;lastChange=Date.now();if(TOK.pid!=null&&!D.players.some(p=>p.id===TOK.pid)){TOK.pid=null;TOK.p=null;saveTok()}paintAll()}
     else paintFlash();
   }
   schedule();
 }
+/* Abfragetakt: spart Cloudflare-Anfragen (Free-Grenze 100.000 pro Tag und Dienst). Bis 10 Spieler 3 s, bis 16 Spieler 4 s, darüber 6 s; nach 60 s ohne Änderung doppelt so langsam (höchstens 12 s); versteckter Tab 15 s. */
+function pollBase(){
+  if(document.hidden)return 15000;
+  const n=D&&D.players?D.players.length:0;let b=n<=10?3000:n<=16?4000:6000;
+  if(Date.now()-lastChange>60000)b=Math.min(12000,b*2);
+  return b}
 function schedule(ms){clearTimeout(pollT);const my=gen;
-  const base=document.hidden?15000:3000,w=ms||Math.min(20000,base*Math.pow(1.6,Math.min(fails,5)));
+  const base=pollBase(),w=ms||Math.min(20000,base*Math.pow(1.6,Math.min(fails,5)));
   pollT=setTimeout(()=>{if(my===gen)poll(false)},w)}
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&CODE){clearTimeout(pollT);poll(false)}});
 window.addEventListener("hashchange",route);
@@ -521,6 +527,6 @@ document.addEventListener("change",ev=>{
 });
 document.addEventListener("toggle",ev=>{const d=ev.target;if(d&&d.dataset&&d.dataset.k){d.open?OPEN.add(d.dataset.k):OPEN.delete(d.dataset.k)}},true);
 
-window.__online={poll:()=>poll(true),state:()=>({CODE,D,TOK}),route};
+window.__online={poll:()=>poll(true),state:()=>({CODE,D,TOK}),route,pollBase,setLast:t=>{lastChange=t}};
 route();
 })();

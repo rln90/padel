@@ -123,3 +123,18 @@ Gefunden bei einem Durchlauf mit 9 Spielern (Ausfall, Zurücknehmen, Entscheidun
 - `SIM_WIDE=1 node tests/server/sim.test.mjs 300`: Simulation über 4–24 Spieler, 3–10 Runden, 1–12 Plätze (auch mehr als nötig), alle Zeiten (Dauer, Pause, Aufwärmen, Vorsprung, Startzeit), mit und ohne Unentschieden. 600 Läufe ohne Verstoß (Spielzahl am Ende gleich, keine Doppelbelegung, Neustart-Test, Sicherung/Wiederherstellung).
 - `npm run test:reihe` (455 Prüfungen, echter Browser): 21 Konstellationen (4–24 Spieler, alle drei Modi, 1–12 Plätze, mit Ausfällen, Start kurz vor Mitternacht), jeweils Halbzeit und Ende als Admin, Spieler, Ausgeschiedener, Handy und Desktop.
 - Ausfälle unter 4 aktive Spieler lehnt der Server mit klarer Meldung ab (kein Absturz).
+
+## Betrieb (Phase 13)
+**Abfragetakt und Anfragenbudget.** Jedes geöffnete Handy fragt den Stand ab. Takt: bis 10 Spieler 3 s, bis 16 Spieler 4 s, darüber 6 s; nach 60 s ohne Änderung doppelt so langsam (höchstens 12 s); versteckter Tab 15 s; beim Zurückkehren in die App sofort. Cloudflare Free: je 100.000 Anfragen pro Tag für Worker und Durable Object (Doku, abgerufen am 20.11.2026).
+
+| Spieler | Takt | Abfragen je Spieler und Stunde | 3 Stunden, alle sichtbar | Anteil der Tagesgrenze |
+|---|---|---|---|---|
+| 9 (+ Laptop) | 3 s | 1.200 | ca. 36.000 | 36 % |
+| 16 | 4 s | 900 | ca. 43.000 | 43 % |
+| 24 | 6 s | 600 | ca. 43.000 | 43 % |
+
+Rechnung ohne Ruhephasen (ungünstigster Fall); Seitenaufrufe sind nicht eingerechnet. Die SQLite-Grenzen (5 Mio. gelesene, 100.000 geschriebene Zeilen pro Tag) sind unkritisch: Gelesen wird nur beim Aufwachen, geschrieben nur bei Änderungen.
+
+`npm run test:netz` (32 Prüfungen): Takt je Spielerzahl, Abfragen in 20 s gezählt, Offline mit Doppeltippen, 4 s Verzögerung, verlorene Antwort, Rückkehr aus dem Hintergrund, angefangene Eingabe bleibt erhalten.
+Texte: Meldung „Der Organisator beitritt …“ korrigiert; zwei Ablehnungen nennen jetzt den nächsten Schritt.
+Probelauf auf echten Geräten und im echten Cloudflare: siehe `docs/PROBELAUF.md`.
