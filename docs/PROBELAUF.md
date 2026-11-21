@@ -10,7 +10,10 @@ Zwei kurze Listen, die nur du auf echten Geräten und im echten Cloudflare mache
 5. Einen Namen mit „<“ eintragen: wird abgelehnt.
 6. Mit mindestens 4 Namen starten, ein Ergebnis eintragen, im Organisator-Tab eintreffen sehen.
 7. „Sicherung“ herunterladen. Datei ist vorhanden.
-8. Turnier beenden und löschen. Danach zeigt der alte Code „Dieses Turnier gibt es nicht (mehr)“.
+8. Auf der Startseite „Offene Turniere anzeigen“ (mit dem Erstellungsschlüssel): Das Testturnier steht in der Liste, „Öffnen“ führt hinein. Falscher Schlüssel zeigt eine Fehlermeldung.
+9. Beim Anlegen (Einstellungen vor dem Start) ist der Spielplan sichtbar und passt sich an, wenn Spielerzahl, Plätze oder Runden geändert werden.
+10. Einstellung „Ja, Platzierung abwarten“ wählen, mit mindestens 6 Namen und 2 Plätzen starten, einige Ergebnisse eintragen. Gleichzeitig angesetzte Spiele stehen im Spielplan in einer Zeile. Wartet der Modus bei freiem Platz, erscheint unter Werkzeuge „Trotzdem jetzt ansetzen“: erster Klick fragt „Ohne Abwarten ansetzen: wirklich?“, zweiter setzt an. Der Modus bleibt „abwarten“.
+11. Turnier beenden und löschen (alternativ über die Liste „Offene Turniere“ mit „Löschen“). Danach zeigt der alte Code „Dieses Turnier gibt es nicht (mehr)“.
 
 Wenn ein Schritt scheitert: Schritt und Meldung notieren, nicht weiter versuchen.
 
