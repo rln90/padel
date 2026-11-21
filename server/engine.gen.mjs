@@ -555,5 +555,5 @@ const assignGames=()=>rollAdd();
 /* Darf dieser Spieler jetzt ausscheiden? (mindestens MINN aktive Spieler, Turnier läuft noch) */
 function canDrop(i){return !!S&&Number.isInteger(i)&&i>=0&&i<S.n&&!isOut(i)&&S.n-(S.out||[]).length>MINN&&!isOver()}
 
-return {get S(){return S},set S(v){S=v},createTournament,scoreClassic,scoreRoll,scoreSO,canAdvance,advanceRound,undoClassic,undoRoll,assignGames,rollAddNow,manualAdd,manualCheck,doDrop,canDrop,isOver,isOut,done,ranking,stats,syncSOcore,allM,rollLeft,helpLeft,lastBlock,extraRound,validR,totalGames,okState,nextOf,classicSlots,MINN,MAXN,MINR,MAXR,DURS,BRKS};
+return {get S(){return S},set S(v){S=v},createTournament,scoreClassic,scoreRoll,scoreSO,canAdvance,advanceRound,undoClassic,undoRoll,assignGames,rollAddNow,manualAdd,manualCheck,rollState,doDrop,canDrop,isOver,isOut,done,ranking,stats,syncSOcore,allM,rollLeft,helpLeft,lastBlock,extraRound,validR,totalGames,okState,nextOf,classicSlots,MINN,MAXN,MINR,MAXR,DURS,BRKS};
 }
