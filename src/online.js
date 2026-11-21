@@ -402,6 +402,21 @@ function adminPanel(){
 }
 
 /* Unten: Links, Ausscheiden, Organisator-Werkzeuge */
+/* Spiel von Hand ansetzen (Organisator, fortlaufend): wenn die App nichts findet oder auf dem Platz schon anders gespielt wird */
+function manualBox(){
+  try{
+    if(D.status!=="running"||!S||!S.ov||!S.courts)return"";
+    const st=rollState(),pl=[...Array(S.n).keys()].filter(i=>!isOut(i)&&!st.busy.has(i)&&st.g[i]<S.R),fr=[...Array(S.courts).keys()].filter(c=>!st.courts.has(c));
+    const opt=(i,sel)=>`<option value="${i}"${sel?" selected":""}>${esc(S.names[i])} (${st.g[i]} Sp.)</option>`;
+    const body=pl.length<2||!fr.length?`<p class="hint">${!fr.length?"Alle Plätze sind belegt.":"Gerade sind keine zwei freien Spieler da."}</p>`
+      :`<p class="hint">Setzt genau dieses Spiel an, auch wenn die App etwas anderes vorschlagen würde. Am Ende haben trotzdem alle gleich viele Spiele.</p>
+      <div class="actions"><select data-d="mana" aria-label="Spieler 1">${pl.map((i,q)=>opt(i,q===0)).join("")}</select>
+      <select data-d="manb" aria-label="Spieler 2">${pl.map((i,q)=>opt(i,q===1)).join("")}</select>
+      <select data-d="manc" aria-label="Platz">${fr.map(c=>`<option value="${c}">${esc(cname(c))}</option>`).join("")}</select>
+      ${sure("manual","manual","Spiel ansetzen","Wirklich ansetzen?")}</div>`;
+    return`<details data-k="manual"${OPEN.has("manual")?" open":""}><summary>Spiel von Hand ansetzen</summary>${body}</details>`;
+  }catch(e){return""}
+}
 function bottom(){
   const adm=isAdm(),mi=myIdx();let h="";
   if(mi>=0&&!D.players[mi].out&&D.status==="running"){
@@ -416,6 +431,7 @@ function bottom(){
       ${btn("export","Sicherung herunterladen",{q:true})}
       ${btn("copy","Link für Spieler kopieren",{q:true,attr:'data-text="'+esc(playerLink())+'"'})}${btn("copy","Organisator-Link kopieren",{q:true,attr:'data-text="'+esc(adminLink())+'"'})}</div>
       ${cand.length?`<div class="actions"><select data-d="dropsel" aria-label="Spieler ausscheiden lassen">${cand.map(x=>`<option value="${x.p.id}">${esc(x.p.name)}</option>`).join("")}</select>${sure("drop","drop","Ausscheiden lassen","Wirklich ausscheiden lassen?")}</div>`:""}
+      ${manualBox()}
       ${D.status==="running"&&S&&S.courts>0?`<details data-k="cnames"${OPEN.has("cnames")?" open":""}><summary>Platznamen ändern</summary>${courtInputs(S.courts,D.cfg.cn)}<div class="actions">${btn("courts","Platznamen speichern")}</div></details>`:""}
       <details data-k="qr"${OPEN.has("qr")?" open":""}><summary>QR-Code für Spieler</summary>${qrBox()}</details>
       <details data-k="players"${OPEN.has("players")?" open":""}><summary>Spieler und Zugänge</summary><ul class="plist">${D.players.map((p,i)=>`<li class="adm-li">${pedit(p,(p.out?' <span class="gone">ausgeschieden</span>':"")+(p.released?' <span class="gone">Zugang frei</span>':""),p.taken?btn("release","Zugang freigeben",{q:true,attr:'data-pid="'+p.id+'"'}):"")}</li>`).join("")}</ul></details>
@@ -521,6 +537,9 @@ const ACT={
   async dropok(e){if(!await call("/admin/drop",{pid:+e.dataset.pid},"admin"))return;await refresh()},
   async dropno(e){if(!await call("/admin/dismiss",{pid:+e.dataset.pid},"admin"))return;await refresh()},
   async drop(){disarm();const pid=+val("dropsel");if(!await call("/admin/drop",{pid},"admin"))return;await refresh()},
+  async manual(){disarm();const a=+val("mana"),b=+val("manb"),c=+val("manc");
+    if(a===b){say("Bitte zwei verschiedene Spieler wählen.",true);paintPanels();return}
+    const r=await call("/admin/pair",{a,b,c},"admin");if(!r)return;say("Spiel angesetzt.");await refresh()},
   async force(){const r=await call("/admin/assign",{force:true},"admin");if(!r)return;say(r.assigned?"Ohne Abwarten angesetzt.":"Es gibt gerade nichts anzusetzen.");await refresh()},
   async assign(){const r=await call("/admin/assign",{},"admin");if(!r)return;say(r.assigned?"Neue Spiele angesetzt.":"Es gibt gerade nichts anzusetzen.");await refresh()},
   async undo(){disarm();if(!await call("/admin/undo",{confirm:true},"admin"))return;await refresh()},
