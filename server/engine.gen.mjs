@@ -429,6 +429,26 @@ function rollAdd(){
 /* Einmalig ohne Abwarten ansetzen: Der Modus „Platzierung abwarten“ bleibt, nur diese Ansetzung ignoriert das Warten.
    rollPeekNow zeigt, was dabei angesetzt würde (ohne etwas zu ändern). */
 function rollPeekNow(st,free){const w=S.wait;S.wait=false;try{return rollPick(st,free)}finally{S.wait=w}}
+/* Spiel von Hand ansetzen (nur fortlaufend): Der Organisator legt Paarung und Platz fest, z. B. wenn ohne Wiederholungsspiel nichts mehr geht.
+   manualCheck gibt einen Fehlertext zurück oder "" wenn das Spiel angesetzt werden darf. */
+function manualCheck(a,b,c){
+  if(!S||!S.ov)return"Nur im fortlaufenden Modus möglich.";
+  if(!(Number.isInteger(a)&&Number.isInteger(b)&&a>=0&&b>=0&&a<S.n&&b<S.n)||a===b)return"Bitte zwei verschiedene Spieler wählen.";
+  if(isOut(a)||isOut(b))return"Ausgeschiedene Spieler können nicht angesetzt werden.";
+  if(!(Number.isInteger(c)&&c>=0&&c<S.courts))return"Bitte einen Platz wählen.";
+  const st=rollState();
+  if(st.busy.has(a)||st.busy.has(b))return"Einer der beiden spielt gerade.";
+  if(st.courts.has(c))return"Dieser Platz ist gerade belegt.";
+  if(st.g[a]>=S.R||st.g[b]>=S.R)return"Einer der beiden hat schon alle Spiele.";
+  return"";
+}
+function manualAdd(a,b,c){
+  const e=manualCheck(a,b,c);if(e)return e;
+  const k=S.games.reduce((x,m)=>Math.max(x,m.k),-1)+1;
+  S.games.forEach(m=>{if(done(m)&&!m.fin)m.fin=k});
+  S.games.push({a,b,sa:null,sb:null,c,k,man:1});
+  return"";
+}
 function rollAddNow(){const w=S.wait;S.wait=false;try{return rollAdd()}finally{S.wait=w}}
 /* Platz und Zeitzeile je Spiel einer Runde (Runde für Runde): gleiche Aufteilung wie im Spielplan */
 function classicSlots(ri){
@@ -535,5 +555,5 @@ const assignGames=()=>rollAdd();
 /* Darf dieser Spieler jetzt ausscheiden? (mindestens MINN aktive Spieler, Turnier läuft noch) */
 function canDrop(i){return !!S&&Number.isInteger(i)&&i>=0&&i<S.n&&!isOut(i)&&S.n-(S.out||[]).length>MINN&&!isOver()}
 
-return {get S(){return S},set S(v){S=v},createTournament,scoreClassic,scoreRoll,scoreSO,canAdvance,advanceRound,undoClassic,undoRoll,assignGames,rollAddNow,doDrop,canDrop,isOver,isOut,done,ranking,stats,syncSOcore,allM,rollLeft,helpLeft,lastBlock,extraRound,validR,totalGames,okState,nextOf,classicSlots,MINN,MAXN,MINR,MAXR,DURS,BRKS};
+return {get S(){return S},set S(v){S=v},createTournament,scoreClassic,scoreRoll,scoreSO,canAdvance,advanceRound,undoClassic,undoRoll,assignGames,rollAddNow,manualAdd,manualCheck,doDrop,canDrop,isOver,isOut,done,ranking,stats,syncSOcore,allM,rollLeft,helpLeft,lastBlock,extraRound,validR,totalGames,okState,nextOf,classicSlots,MINN,MAXN,MINR,MAXR,DURS,BRKS};
 }
