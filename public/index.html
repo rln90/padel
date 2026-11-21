@@ -53,6 +53,19 @@ main{max-width:720px;margin:0 auto;padding-block:24px 40px;display:flex;flex-dir
 :focus-visible{outline:2px solid var(--court);outline-offset:2px}
 
 .top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+/* Ballwechsel im Kopf: reine CSS-Animation, ruht bei „Bewegung reduzieren“ */
+.rally{position:relative;width:150px;height:30px;margin-top:8px}
+.rally .rk{position:absolute;bottom:2px;width:14px;height:22px;border:2px solid var(--edge);border-radius:7px 7px 6px 6px;box-sizing:border-box}
+.rally .rk::after{content:"";position:absolute;left:4px;top:19px;width:2px;height:8px;background:var(--edge);border-radius:1px}
+.rally .rk.l{left:0;transform-origin:50% 100%;animation:rkl 1.6s ease-in-out infinite}
+.rally .rk.r{right:0;transform-origin:50% 100%;animation:rkr 1.6s ease-in-out infinite}
+.rally .bl{position:absolute;left:16px;bottom:10px;width:9px;height:9px;border-radius:50%;background:#d4e157;box-shadow:0 0 0 1px rgba(0,0,0,.15);animation:blx 1.6s linear infinite,bly .8s ease-out infinite alternate}
+@keyframes blx{0%,100%{left:16px}50%{left:125px}}
+@keyframes bly{0%{bottom:8px}100%{bottom:24px}}
+@keyframes rkl{0%,100%{transform:rotate(-18deg)}12%,88%{transform:rotate(0)}}
+@keyframes rkr{50%{transform:rotate(18deg)}38%,62%{transform:rotate(0)}0%,100%{transform:rotate(0)}}
+@media (prefers-reduced-motion:reduce){.rally .rk,.rally .bl{animation:none}.rally .bl{left:70px}}
+@media print{.rally{display:none}}
 h1{font:600 30px/1.1 var(--display);letter-spacing:-.01em;margin:0}
 .tagline{margin:6px 0 0;color:var(--muted);font-size:16px}
 h2{font:600 22px/1.2 var(--display);margin:0;text-wrap:balance}
@@ -315,11 +328,15 @@ body.onl-me #app>.section:nth-of-type(3){order:4}
 .ovl .hint{margin:4px 0 8px}
 .ovl .actions{margin-top:8px}
 .ovnone{margin-top:12px}
+
+/* Begrüßung */
+.moin{margin:0 0 12px;font-size:16px}
+.moin .witz{display:block;margin-top:4px;font-size:14px;color:var(--muted);font-style:italic}
 </style>
 
 <main>
   <header class="top">
-    <div><h1>Padel-Turnier</h1><p class="tagline" id="tl">Einzel im Schweizer System</p></div>
+    <div><h1>Padel-Turnier</h1><p class="tagline" id="tl">Einzel im Schweizer System</p><div class="rally" aria-hidden="true"><i class="rk l"></i><i class="bl"></i><i class="rk r"></i></div></div>
     <div id="topbtns"></div>
   </header>
   <div id="onl"></div>
@@ -1934,6 +1951,28 @@ function gameRow(g,o){
     <div class="actions">${btn(o.admin?"asave":"save",dn?"Ändern":"Eintragen",{attr:'data-gid="'+id+'"'+(g.locked&&!o.admin?" disabled":"")})}${o.extra||""}<span class="status">${esc(st)}</span></div></div>`;
 }
 
+/* Begrüßung mit Witz: wechselt nach jedem eigenen Spiel, bleibt beim Neuladen gleich (kein Flackern) */
+const WITZE=[
+  "Warum nehmen Padel-Spieler nie einen Kredit auf? Sie spielen lieber über die Wand als über ihre Verhältnisse.",
+  "Mein Aufschlag ist wie WLAN im Zug: Manchmal kommt er an.",
+  "Ich spiele nicht schlecht. Ich gebe den anderen nur Selbstvertrauen.",
+  "Was sagt der Ball zum Netz? „Du stehst mir immer im Weg.“",
+  "Padel ist wie Tennis, nur dass man seine Fehler gleich zweimal sieht: einmal vorne, einmal an der Wand.",
+  "Ich trainiere nicht, ich sammle Erfahrung. Hauptsächlich im Verlieren.",
+  "Wie nennt man einen Padel-Spieler ohne Ausrede? Gibt es nicht.",
+  "Mein Schläger ist schuld. Der war schon immer so.",
+  "Die Wand ist dein Freund. Außer bei deinem Gegner, da ist sie unfair.",
+  "Warum ist der Ball so müde? Er wurde den ganzen Tag hin und her geschickt.",
+  "Ich habe einen perfekten Lob gespielt. Nur leider in die falsche Richtung.",
+  "Aufwärmen wird überschätzt. Sagt jeder, kurz bevor es zieht.",
+  "Taktik für heute: Ball rüber. Notfalls auch über die Wand.",
+  "Der Unterschied zwischen mir und einem Profi? Etwa 10.000 Stunden und ein Physiotherapeut.",
+  "Wer zuletzt lacht, hat den Ball zuletzt über die Wand gelupft."
+];
+function moinLine(mi){
+  const nd=gamesOf().filter(g=>(g.m.a===mi||g.m.b===mi)&&done(g.m)).length;
+  return`<p class="moin">Moin <b>${esc(S.names[mi])}</b>!<span class="witz">${esc(WITZE[(mi*7+nd)%WITZE.length])}</span></p>`;
+}
 /* Mein Spiel */
 function playerPanel(){
   const mi=myIdx();
@@ -1946,6 +1985,7 @@ function playerPanel(){
   if(ng){const nx=nextOf(mi),opp=S.names[ng.m.a===mi?ng.m.b:ng.m.a],where=nx&&nx.k!=null?" · "+cname(nx.k)+(T0()!=null?" ab "+tt(nx.i,S.dur+S.brk):""):"";
     h+=`<div class="newgame" role="alert"><span><b>Dein nächstes Spiel steht.</b> Gegen ${esc(opp)}${esc(where)}</span>${btn("seen","OK",{q:true})}</div>`}
   const nx=open.length?nextOf(mi):null;
+  h+=moinLine(mi);
   h+=`<section class="hero mygame" aria-label="Dein Spiel">`;
   if(open.length){
     const g0=open[0],opp0=S.names[g0.m.a===mi?g0.m.b:g0.m.a];
