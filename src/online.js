@@ -309,6 +309,28 @@ function gameRow(g,o){
     <div class="actions">${btn(o.admin?"asave":"save",dn?"Ändern":"Eintragen",{attr:'data-gid="'+id+'"'+(g.locked&&!o.admin?" disabled":"")})}${o.extra||""}<span class="status">${esc(st)}</span></div></div>`;
 }
 
+/* Begrüßung mit Witz: wechselt nach jedem eigenen Spiel, bleibt beim Neuladen gleich (kein Flackern) */
+const WITZE=[
+  "Warum nehmen Padel-Spieler nie einen Kredit auf? Sie spielen lieber über die Wand als über ihre Verhältnisse.",
+  "Mein Aufschlag ist wie WLAN im Zug: Manchmal kommt er an.",
+  "Ich spiele nicht schlecht. Ich gebe den anderen nur Selbstvertrauen.",
+  "Was sagt der Ball zum Netz? „Du stehst mir immer im Weg.“",
+  "Padel ist wie Tennis, nur dass man seine Fehler gleich zweimal sieht: einmal vorne, einmal an der Wand.",
+  "Ich trainiere nicht, ich sammle Erfahrung. Hauptsächlich im Verlieren.",
+  "Wie nennt man einen Padel-Spieler ohne Ausrede? Gibt es nicht.",
+  "Mein Schläger ist schuld. Der war schon immer so.",
+  "Die Wand ist dein Freund. Außer bei deinem Gegner, da ist sie unfair.",
+  "Warum ist der Ball so müde? Er wurde den ganzen Tag hin und her geschickt.",
+  "Ich habe einen perfekten Lob gespielt. Nur leider in die falsche Richtung.",
+  "Aufwärmen wird überschätzt. Sagt jeder, kurz bevor es zieht.",
+  "Taktik für heute: Ball rüber. Notfalls auch über die Wand.",
+  "Der Unterschied zwischen mir und einem Profi? Etwa 10.000 Stunden und ein Physiotherapeut.",
+  "Wer zuletzt lacht, hat den Ball zuletzt über die Wand gelupft."
+];
+function moinLine(mi){
+  const nd=gamesOf().filter(g=>(g.m.a===mi||g.m.b===mi)&&done(g.m)).length;
+  return`<p class="moin">Moin <b>${esc(S.names[mi])}</b>!<span class="witz">${esc(WITZE[(mi*7+nd)%WITZE.length])}</span></p>`;
+}
 /* Mein Spiel */
 function playerPanel(){
   const mi=myIdx();
@@ -321,6 +343,7 @@ function playerPanel(){
   if(ng){const nx=nextOf(mi),opp=S.names[ng.m.a===mi?ng.m.b:ng.m.a],where=nx&&nx.k!=null?" · "+cname(nx.k)+(T0()!=null?" ab "+tt(nx.i,S.dur+S.brk):""):"";
     h+=`<div class="newgame" role="alert"><span><b>Dein nächstes Spiel steht.</b> Gegen ${esc(opp)}${esc(where)}</span>${btn("seen","OK",{q:true})}</div>`}
   const nx=open.length?nextOf(mi):null;
+  h+=moinLine(mi);
   h+=`<section class="hero mygame" aria-label="Dein Spiel">`;
   if(open.length){
     const g0=open[0],opp0=S.names[g0.m.a===mi?g0.m.b:g0.m.a];
