@@ -88,6 +88,7 @@ export class Tournament{
       let who;
       try{who=this.auth(req.token,route==='GET state')}catch(e){this.limit(req,{role:'none'},req.ip);throw e}
       this.limit(req,who,req.ip);
+      this.liveFix();
       this.tick();
       const h=this.routes[route];
       if(!h)throw new Err(404,'unbekannt','Unbekannter Pfad.');
@@ -130,6 +131,25 @@ export class Tournament{
     const t=this.now(),g=m.cfg.grace*1000;let ch=false;
     for(const k in m.res){const r=m.res[k];if(r.st==='reported'&&t-r.at>=g){r.st='confirmed';r.auto=true;ch=true}}
     if(ch){this.commit({role:'sys'},'auto-confirm',null);this.autoStep()}
+  }
+  /* EINMALIG (Turnier 21.11.2026): Chef–Invalide und Robin–Papa liefen auf dem Platz, ohne dass die App sie kannte.
+     Beim ersten Zugriff nach dem Update werden sie angesetzt, wenn beide Spieler frei sind und noch nie gegeneinander gespielt haben.
+     Läuft höchstens einmal je Turnier (m.fix1) und nur, wenn genau diese 7 Spieler mitspielen und schon mindestens 12 Ergebnisse da sind. */
+  liveFix(){
+    const m=this.m,E=this.E;if(!m||m.fix1||m.status!=='running'||!E.S||!E.S.ov)return;
+    const S=E.S,norm=x=>String(x).toLowerCase().replace(/\s+/g,''),nm=S.names.map(norm);
+    const want=['chefschamlar','polnischeroger','alge','langlebepapa','pornopadelpeter69','invalide','robin'];
+    if(S.n!==7||!want.every(w=>nm.includes(w)))return;
+    if(S.games.filter(g=>g.sa!=null&&g.sb!=null).length<12)return;
+    m.fix1=true;let n=0;
+    for(const [x,y,cp] of [['chefschamlar','invalide',0],['robin','langlebepapa',2]]){
+      const a=nm.indexOf(x),b=nm.indexOf(y);
+      if(S.games.some(g=>(g.a===a&&g.b===b)||(g.a===b&&g.b===a)))continue;
+      const st=E.rollState(),free=[...Array(S.courts).keys()].filter(c=>!st.courts.has(c));if(!free.length)continue;
+      const c=free.includes(cp)?cp:free[0];
+      if(!E.manualAdd(a,b,c))n++;
+    }
+    this.reconcile();this.commit({role:'sys'},'fix1',n);
   }
   need(who,role){
     if(role==='admin'&&who.role!=='admin')throw new Err(403,'verboten','Nur der Organisator darf das.');
